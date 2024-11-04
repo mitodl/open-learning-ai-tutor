@@ -239,9 +239,9 @@ if True:
     exercise_name_placeholder = st.sidebar.empty()
     exercise_name_placeholder.write(f"Exercice: {st.session_state['topic']}")
     used_probl = st.sidebar.selectbox("Available problems:",["custom","consistency","country","A1P1","A1P2","A1P3"], key='selection_prev_ex') 
-    #exercise = st.sidebar.text_area("Custom latex exercise (pick custom above)")
-    #exercise_solution = st.sidebar.text_area("Custom latex solution")
-    #exercise_name = st.sidebar.text_input("Exercise name")
+    exercise = st.sidebar.text_area("Custom latex exercise (pick custom above)")
+    exercise_solution = st.sidebar.text_area("Custom latex solution")
+    exercise_name = st.sidebar.text_input("Exercise name")
     autoplay_button = False
     print_msg_button = False
     change_exercise_button = st.sidebar.button("Change exercise", key="change")
