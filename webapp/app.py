@@ -27,10 +27,10 @@ from github import Github
 from github import InputGitTreeElement
 from github import Auth
 
-gtb_token = "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"
-auth = Auth.Token(gtb_token)
-g = Github(auth=auth)
-repo = g.get_user().get_repo('Universal_AI') # repo name
+gtb_token = "token"
+#auth = Auth.Token(gtb_token)
+#g = Github(auth=auth)
+#repo = g.get_user().get_repo('Universal_AI') # repo name
 
 ##### Github #####
 def commit(g,repo,content):
