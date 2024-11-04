@@ -1,0 +1,5 @@
+openai
+streamlit_chat
+PyGithub
+streamlit_modal
+tiktoken
