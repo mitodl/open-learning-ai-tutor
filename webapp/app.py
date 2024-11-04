@@ -78,7 +78,7 @@ url_student_image = "https://api.dicebear.com/5.x/fun-emoji/svg?seed=88"
 
 ### global vars
 randomex = random.randint(0,2)
-topic = "country"
+topic = "A1P1"
 pb,sol = get_pb_sol(topic)
 if 'topic' not in st.session_state:
     st.session_state['topic'] = topic
