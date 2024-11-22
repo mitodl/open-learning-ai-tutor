@@ -94,6 +94,7 @@ class GraphTutor(Tutor):
         self.pb,self.sol = pb,sol
         self.open = is_open
         self.model = model
+        self.final_response = None
         
         # tools 
         if tools is None or tools == []:
@@ -131,6 +132,7 @@ class GraphTutor(Tutor):
             # If the LLM makes a tool call, then we route to the "tools" node
             if last_message.tool_calls:
                 if last_message.tool_calls[-1]['name'] == "send_message_to_student":
+                    self.final_response = last_message.tool_calls[-1]['args']['query']
                     return END
                 print("tool call detected")
                 print(last_message.tool_calls)
@@ -184,7 +186,7 @@ class GraphTutor(Tutor):
         
 
     def get_response(self,messages_student,messages_tutor,max_tokens=1500):
-        #TODO get_responses (plural)
+        
         print("\n---")
         #print("tutor called using model ", self.model)
         prompt,intent,assessment,prompt_tokens,completion_tokens,docs = self.intermediary.get_prompt(self.pb,self.sol,messages_student,messages_tutor,open=self.open)
@@ -202,15 +204,20 @@ class GraphTutor(Tutor):
             {"messages": prompt},
             config={"configurable": {"thread_id": 42}}
         )
-        response = ''
+        response = self.final_response
+        self.final_response = None
         #print("final_state:\n\n",final_state['messages'])
-        for message in final_state['messages']:
-            if type(message) != type(AIMessage('')):
-                response = ''
-            elif message.content != '':
-                response += message.content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","") + "\n"
-        #response = final_state['messages'][-1].content
-        
+        if response == None:
+            response = ''
+            for message in final_state['messages']:
+                if type(message) != type(AIMessage('')):
+                    response = ''
+                elif message.content != '':
+                    response += message.content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","") + "\n"
+           #response = final_state['messages'][-1].content
+        else:
+            response = response.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","") + "\n"
+        #TODO update token info
         token_info = final_state['messages'][-1].response_metadata['token_usage']
         print("token_info:")
         print(token_info)

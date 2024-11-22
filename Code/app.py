@@ -15,7 +15,7 @@ import Student
 import tiktoken
 import Tutor
 from e2b_code_interpreter import Sandbox
-from get_key import get_client_openAI
+#from get_key import get_client_openAI
 from github import Auth, Github
 from langchain_core.tools import tool
 from langchain_experimental.utilities import PythonREPL
