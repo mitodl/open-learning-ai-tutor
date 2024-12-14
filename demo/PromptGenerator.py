@@ -167,6 +167,7 @@ Provide the least amount of scaffolding possible to help the student solve the p
         return messages
     
 
+# THIS IS THE ONE USED
 class SimplePromptGenerator(PromptGenerator):
     def get_prompt(self,pb,sol,student_messages,tutor_messages,intents, retrieved_text=None):
         print("HERE")
