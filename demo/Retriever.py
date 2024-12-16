@@ -1,30 +1,20 @@
-from operator import itemgetter
-import time
-from langchain import hub
+# Agent that retrieves parts of the textbook to help the tutor LLM.
+
+
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import WebBaseLoader, TextLoader
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import pandas as pd
-import json
-from langchain.chains import create_citation_fuzzy_match_chain
 from langchain_openai import ChatOpenAI
-import os
-from langchain.chains import RetrievalQA
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import TextLoader
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
-from langchain.chains import create_qa_with_sources_chain
-from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_together import ChatTogether
 from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from concurrent.futures import ThreadPoolExecutor
 from Books import analytics_book

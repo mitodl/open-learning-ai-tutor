@@ -10,7 +10,7 @@ class Intermediary():
 
         self.assessor = Assessor.Assessor(self.client,self.model,assessment_history = assessment_history) if assessor is None else assessor
         self.intentSelector = IntentSelector.IntentSelector(intent_history=intent_history) if intentSelector is None else intentSelector
-        self.promptGenerator = PromptGenerator.RigidPromptGenerator() if promptGenerator is None else promptGenerator
+        self.promptGenerator = PromptGenerator.PromptGenerator() if promptGenerator is None else promptGenerator
 
     def update_client(self,client):
         self.client = client
@@ -38,50 +38,8 @@ class Intermediary():
         prompt = self.promptGenerator.get_prompt(pb,sol,student_messages,tutor_messages,intent,docs)
         return prompt,intent,assessment,assessor_prompt_tokens,assessor_completion_tokens,docs,rag_questions
     
-class EmptyIntermediary(Intermediary):
-    def get_prompt(self, pb, sol, student_messages, tutor_messages, open=True):
-        print("generating tutor's prompt...")
-        prompt = self.promptGenerator.get_prompt(pb,sol,student_messages,tutor_messages,[])
-        return prompt,[],[],0,0
 
-class NextStepIntermediary(Intermediary):
-    def __init__(self,client,model,assessor = None, intentSelector=None,promptGenerator = None,intent_history = [],assessment_history=[]) -> None:
-        self.client = client
-        self.model = model
-
-        self.assessor = Assessor.Assessor(self.client,self.model,assessment_history = assessment_history) if assessor is None else assessor
-        self.intentSelector = IntentSelector.StrategyIntentSelector(intent_history=intent_history) if intentSelector is None else intentSelector
-        self.promptGenerator = PromptGenerator.RigidPromptGenerator() if promptGenerator is None else promptGenerator
-
-class LLMIntermediary(Intermediary):
-    def __init__(self,client,model,assessor = None, intentSelector=None,promptGenerator = None,intent_history = [],assessment_history=[]) -> None:
-        self.client = client
-        self.model = model
-
-        self.assessor = Assessor.Assessor(self.client,self.model,assessment_history = assessment_history) if assessor is None else assessor
-        self.intentSelector = IntentSelector.LLMIntentSelector(client,intent_history=intent_history) if intentSelector is None else intentSelector
-        self.promptGenerator = PromptGenerator.RigidPromptGenerator() if promptGenerator is None else promptGenerator
-
-
-class FlexibleIntermediary(Intermediary):
-    def __init__(self,client,model,assessor = None, intentSelector=None,promptGenerator = None,intent_history = [],assessment_history=[]) -> None:
-        self.client = client
-        self.model = model
-
-        self.assessor = Assessor.Assessor(self.client,self.model,assessment_history = assessment_history) if assessor is None else assessor
-        self.intentSelector = IntentSelector.IntentSelector(intent_history=intent_history) if intentSelector is None else intentSelector
-        self.promptGenerator = PromptGenerator.FlexiblePromptGenerator() if promptGenerator is None else promptGenerator
-
-
-class SimpleIntermediary(Intermediary):
-    def __init__(self,client,model,assessor = None, intentSelector=None,promptGenerator = None,intent_history = [],assessment_history=[]) -> None:
-        self.client = client
-        self.model = model
-
-        self.assessor = Assessor.ShortMemoryAssessor(self.client,self.model,assessment_history = assessment_history) if assessor is None else assessor
-        self.intentSelector = IntentSelector.SimpleIntentSelector(intent_history=intent_history) if intentSelector is None else intentSelector
-        self.promptGenerator = PromptGenerator.SimplePromptGenerator() if promptGenerator is None else promptGenerator
-
+# This is the one we use
 class GraphIntermediary(Intermediary):
     def __init__(self,client,model,assessor = None, intentSelector=None,promptGenerator = None,intent_history = [],assessment_history=[], version="V1") -> None:
         self.client = client

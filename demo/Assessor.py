@@ -124,117 +124,6 @@ Analyze the last student's utterance.
         return assessment, prompt_tokens, completion_tokens
     
 
-class NoJustificationAssessor(Assessor):
-    def get_purpose(self, pb, sol):
-        purpose = \
-        f"""A student and their tutor are working on a math problem:
-*Problem Statement*:
-##
-{pb}
-##
-
-The *Provided Solution* of this problem is:
-##
-{sol}
-##
-
-The tutor's utterances are preceded by "Tutor:" and the student's utterances are preceded by "Student:".
-
-Analyze the last student's utterance.
-select all the feedbacks that apply from "a,b,c,d,e,f,g,h,i,j":
-
-a) The student is using or suggesting a wrong method or taking a wrong path to solve the problem
-b) The student made an error in the algebraic manipulation
-c) The student made a numerical error
-d) The student provided an intuitive or incomplete solution
-e) The student's answer is not clear or ambiguous
-f) The student correctly answered the tutor's previous question
-g) The student is explicitly asking about how to solve the problem
-h) The student is explicitly asking the tutor to state a specific theorem
-i) The student is explicitly asking the tutor to do a numerical calculation
-j) The student and tutor arrived at a complete solution for the entirety of the initial *Problem Statement*
-k) The student and tutor arrived at a complete solution for the entirety of the initial *Problem Statement* equivalent to the method provided in the *Provided Solution*
-
-Moreover select if relevant some emotional states from "l,m":
-l) The student shows a strong lack of motivation
-m) The student shows a strong lack of self-confidence
-
-Answer in the following json format:
-##
-{{
-    "selection": ".."
-}}
-##
-Analyze the last student's utterance.
-{{"""
-        return purpose
-    
-class ShortMemoryAssessor(Assessor):
-    def assess(self, pb, sol, student_messages, tutor_messages):
-        if len(student_messages) > 3:
-            student_messages = student_messages[-3:]
-        if len(tutor_messages) > 3:
-            tutor_messages = tutor_messages[-3:]
-
-        return super().assess(pb, sol, student_messages, tutor_messages)
-    
-    def create_prompt(self,pb,sol,tutor_messages,student_messages):
-        #v1 without Tianyi's input
-        purpose = self.get_purpose(pb,sol)
-        #print("DEBUG")
-        #print(tutor_messages)
-        #print(student_messages)
-        #print(self.history)
-        prompt = [{"role": "system", "content": purpose}]
-        extension = \
-            [
-            msg for i in range(len(tutor_messages)-1)
-                for msg in (
-                    {"role": "user", "content": f"Tutor: \"{tutor_messages[i]}\"\nStudent: \"{student_messages[i]}\"\n"},
-                    {"role": "assistant", "content": self.history[-len(tutor_messages)+1+i]}
-                )
-            ]
-        prompt = prompt + extension
-        prompt.append({"role": "user", "content":f"Tutor: \"{tutor_messages[-1]}\"\nStudent: \"{student_messages[-1]}\"\n" })
-        print("Short mem prompt len is:",len(''.join([msg["content"] for msg in prompt])))
-        return prompt
-    
-class EndAssessor(Assessor):
-    def get_purpose(self, pb, sol):
-        purpose = \
-        f"""A student and their tutor are working on a math problem:
-*Problem Statement*:
-##
-{pb}
-##
-
-The *Provided Solution* of this problem is:
-##
-{sol}
-##
-
-The tutor's utterances are preceded by "Tutor:" and the student's utterances are preceded by "Student:".
-
-Analyze the last student's utterance.
-select all the feedbacks that apply from "j,k":
-
-j) The student and tutor arrived at a complete solution for all questions in the initial *Problem Statement*
-k) The student and tutor arrived at a complete solution for all questions in the initial *Problem Statement* equivalent to the method provided in the *Provided Solution*
-
-Proceed step by step. First briefly justify your selection, then provide a string containing the selected letters.
-Answer in the following json format:
-##
-{{
-    "justification": "..",
-    "selection": ".."
-
-}}
-##
-Analyze the last student's utterance.
-{{"""
-        return purpose
-
-
 # THIS IS THE ONE WE ARE USING
 class GraphAssessor(Assessor):
     def __init__(self,client,model,assessment_history=[],tools=None, version="V1") -> None:
@@ -293,7 +182,7 @@ class GraphAssessor(Assessor):
 
         
         # Define the asessor's graph
-        def should_continue(state: MessagesState) -> Literal["tools", END]:
+        def should_continue(state: MessagesState) -> Literal["tools", END]: # END imported from langgraph.graph
             messages = state['messages']
             last_message = messages[-1]
             print(last_message.content)
@@ -311,56 +200,35 @@ class GraphAssessor(Assessor):
             # We return a list, because this will get added to the existing list
             return {"messages": [response]}
         
-        # def call_rag(state: MessagesState):
-        #     if self.rag_agent is None:
-        #         return{"retrieved_docs": []}
-        #     messages = state['messages']
-        #     transcript = ""
-        #     for i in range(1,len(messages),2):
-        #         transcript += f"Tutor: \"{messages[i]}\"\nStudent: \"{messages[i+1]}\"\n"
-
-        #     response = self.rag_agent.invoke(transcript)
-            
-        #     return {"retrieved_docs": [response]}
-
-
         # Define a new graph
         workflow = StateGraph(MessagesState)
 
-        # Define the two nodes we will cycle between
-        # workflow.add_node("retriever", call_rag)
         workflow.add_node("agent", call_model)
         if tool_node is not None:
             workflow.add_node("tools", tool_node)
 
-        # Set the entrypoint as `retriever`
+        # Set the entrypoint as `agent`
         # This means that this node is the first one called
-        #workflow.add_edge(START, "retriever")
         workflow.add_edge(START, 'agent')
 
         # We now add a conditional edge
         if tool_node is not None:
             workflow.add_conditional_edges(
-                # First, we define the start node. We use `agent`.
-                # This means these are the edges taken after the `agent` node is called.
                 "agent",
-                # Next, we pass in the function that will determine which node is called next.
+                # the function that will determine which node is called next.
                 should_continue,
             )
         else:
             workflow.add_edge("agent", END)
 
-        # We now add a normal edge from `tools` to `agent`.
+        # normal edge from `tools` to `agent`.
         # This means that after `tools` is called, `agent` node is called next.
         workflow.add_edge("tools", 'agent')
 
         # Initialize memory to persist state between graph runs
         checkpointer = MemorySaver()
 
-        # Finally, we compile it!
-        # This compiles it into a LangChain Runnable,
-        # meaning you can use it as you would any other runnable.
-        # Note that we're (optionally) passing the memory when compiling the graph
+        # compile agent
         app = workflow.compile(checkpointer=checkpointer)
         self.app = app
 

@@ -11,7 +11,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 
-
+# We use GraphTutor, NOT the base class. See below
 class Tutor():
 
     def __init__(self,client,pb,sol,model="gpt-4o-2024-05-13",intermediary=None,intent_history = [],assessment_history=[],is_open=True, version="V1") -> None:
@@ -19,18 +19,13 @@ class Tutor():
         print("Creating tutor...")
         print("---")
         self.client = client
-        self.model = model#"myGPT4"#model
+        self.model = model
         self.pb,self.sol = pb,sol
         self.open = is_open
         if not intermediary is None:
             self.intermediary = intermediary
-        elif version == "V2":
-            self.intermediary = Intermediary.EmptyIntermediary(client = self.client,model = self.model, intent_history = intent_history, assessment_history = assessment_history)
-        elif version == "V3":
-            self.intermediary = Intermediary.NextStepIntermediary(client = self.client,model = self.model, intent_history = intent_history, assessment_history = assessment_history)
         else:
-            # notably if V1
-            self.intermediary = Intermediary.SimpleIntermediary(client = self.client,model = self.model, intent_history = intent_history, assessment_history = assessment_history)
+            self.intermediary = Intermediary.GraphIntermediary(client = self.client,model = self.model, intent_history = intent_history, assessment_history = assessment_history)
 
     def update_client(self,client):
         self.client = client
@@ -159,15 +154,12 @@ class GraphTutor(Tutor):
         workflow.add_node("tools", tool_node)
 
         # Set the entrypoint as `agent`
-        # This means that this node is the first one called
         workflow.add_edge(START, "agent")
 
-        # We now add a conditional edge
+        # conditional edge
         workflow.add_conditional_edges(
-            # First, we define the start node. We use `agent`.
-            # This means these are the edges taken after the `agent` node is called.
             "agent",
-            # Next, we pass in the function that will determine which node is called next.
+            # function that will determine which node is called next.
             should_continue,
         )
 
@@ -178,10 +170,6 @@ class GraphTutor(Tutor):
         # Initialize memory to persist state between graph runs
         checkpointer = MemorySaver()
 
-        # Finally, we compile it!
-        # This compiles it into a LangChain Runnable,
-        # meaning you can use it as you would any other runnable.
-        # Note that we're (optionally) passing the memory when compiling the graph
         app = workflow.compile(checkpointer=checkpointer)
         self.app = app
 
@@ -237,45 +225,6 @@ class GraphTutor(Tutor):
         return response, total_tokens, prompt_tokens, completion_tokens, intent, assessment, extra_info
     
     def get_response_stream(self,messages_student,messages_tutor,max_tokens=1500):
-        #TODO get_responses (plural)
-        raise NotImplementedError("Stream not implemented for graph tutor")
-        print("\n---")
-        #print("tutor called using model ", self.model)
-        prompt,intent,assessment,prompt_tokens,completion_tokens = self.intermediary.get_prompt(self.pb,self.sol,messages_student,messages_tutor,open=self.open)
-        #prompt.append({"role": "system", "content": "Ask the student to find by themself a problem with their answer without giving any hint"})
-        print("prompt generated:")
-        #print_logs(prompt)
+        #TODO implement it
+        raise NotImplementedError("Stream not yet implemented for graph tutor")
         
-        
-        # completion = self.client.chat.completions.create(
-        #     model=self.model,
-        #     messages=prompt,
-        #     max_tokens=max_tokens
-        # )
-        final_state = self.app.invoke(
-            {"messages": prompt},
-            config={"configurable": {"thread_id": 42}}
-        )
-        response = ''
-        #print("final_state:\n\n",final_state['messages'])
-        for message in final_state['messages']:
-            if type(message) != type(AIMessage('')):
-                response = ''
-            elif message.content != '':
-                response += message.content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","") + "\n"
-        #response = final_state['messages'][-1].content
-        
-        token_info = final_state['messages'][-1].response_metadata['token_usage']
-        print("token_info:")
-        print(token_info)
-        print("---")
-        prompt_tokens += token_info['prompt_tokens']
-        completion_tokens += token_info['completion_tokens']
-        total_tokens = prompt_tokens + completion_tokens
-
-        response = response.replace("\(","$").replace("\)","$").replace("\[","$$").replace("\]","$$")
-        print("tutor answers:")
-        print(response)
-        print("---")
-        return response, total_tokens, prompt_tokens, completion_tokens, intent, assessment
-    

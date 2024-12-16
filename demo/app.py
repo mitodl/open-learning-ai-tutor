@@ -1,11 +1,14 @@
-## for streamlit cloud, uncomment below:
+# By Romain Puech
+
+###### for streamlit cloud, uncomment below:
 #__import__('pysqlite3')
 #import sys
 #sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 #import sqlite3
 # USER STUDY APP
 #import sqlite3
-import asyncio
+#######
+
 import itertools
 import json
 import os
@@ -13,11 +16,10 @@ import random
 import time
 
 import streamlit as st
-import Student
+
 import tiktoken
 import Tutor
 from e2b_code_interpreter import Sandbox
-#from get_key import get_client_openAI
 from github import Auth, Github
 from langchain_core.tools import tool
 from langchain_experimental.utilities import PythonREPL
@@ -29,28 +31,30 @@ from problems import get_pb_sol
 from taxonomy import Intent
 
 
+# API keys
 openai_key = "key"
 anthropic_api_key = "key"
 os.environ["ANTHROPIC_API_KEY"] = anthropic_api_key
 os.environ["OPENAI_API_KEY"] = openai_key   
 os.environ["E2B_API_KEY"]="key"
 os.environ["TOGETHER_API_KEY"] = "key"
-
 gtb_token = "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"
 auth = Auth.Token(gtb_token)
 g = Github(auth=auth)
 repo = g.get_user().get_repo('Universal_AI') # repo name
-whiteboard_used = False
-## tool creation
+
+
+## langgraph's tools creation
 @tool
 def send_message_to_student(query: str):
     """A tool to send a message to your student. This tool is the only whay for you to communicate with your student. The input should be your message. After the message is sent, you will wait for the student's next message."""
     return query
 
+#whiteboard_used = False
 @tool
 def whiteboard(query):
     """A whiteboard to show graphs to your student. The input should be valid matplotlib plot commands. refer to this tool as the 'whiteboard' and don't mention you use python"""
-    whiteboard_used = True
+    #whiteboard_used = True
     print('\n\nWHITEBOARD UPDATED\n\n') 
     try:
         exec(query)
@@ -89,9 +93,11 @@ def R_code_interpreter(code:str):
     return sbx.run_code(code, language = 'r' )
 
 tools = [send_message_to_student,whiteboard,calculator,execute_python,R_code_interpreter]
-##
+#####
 
 ##### Github #####
+# hacky way to log the conversations: I commit a json file on Github after each message.
+#  Of course we should use something cleaner.
 def commit(g,repo,content):
     file_path = f"logs/{st.session_state['session_ID']}.txt"
     branch_name = "main"
@@ -168,7 +174,7 @@ else:
 
 print("\nModel: ", model)
 
-
+# 2 different versions of the tutor (in addition to model)
 version = random.choice(["V1","V2"]) #V1 no RAG, V2 RAG
 
 ### global vars
@@ -188,11 +194,7 @@ if "AI_version" not in st.session_state:
 if "model" not in st.session_state:
     st.session_state["model"] = model
 
-
-### Azure OpenAI API key
-#client = get_client_openAI()#get_client()
-
-### Session state vars
+# some of the following variables may be useless
 if 'tutor' not in st.session_state:
     st.session_state['tutor'] = ["Hello! Can you walk me through your solution?"]
 if 'student' not in st.session_state:
@@ -207,34 +209,16 @@ if 'total_tokens' not in st.session_state:
     st.session_state['total_tokens'] = []
 if 'total_cost' not in st.session_state:
     st.session_state['total_cost'] = 0.0
-if 'tellprompt' not in st.session_state:
-    st.session_state['tellprompt'] = False
-if 'Student' not in st.session_state:
-    st.session_state['Student'] = Student.Student(client, pb = st.session_state['pb'], model = model)
 if 'Tutor' not in st.session_state:
     st.session_state['Tutor'] = Tutor.GraphTutor(client, pb=st.session_state['pb'], sol=st.session_state['sol'], model = model, version=st.session_state["AI_version"], tools = tools)
 if 'intent' not in st.session_state:
     st.session_state['intent'] = []
 if 'assessment' not in st.session_state:
     st.session_state['assessment'] = []
-if "consent" not in st.session_state:
-    st.session_state['consent'] = False
-if "elapsed_time" not in st.session_state:
-    st.session_state["elapsed_time"] = 0
-if "done" not in st.session_state:
-    st.session_state["done"] = False
-if "post" not in st.session_state:
-    st.session_state["post"] = False
-if "post_test_elapsed_time" not in st.session_state:
-    st.session_state["post_test_elapsed_time"] = 0
-if "finished_clicks" not in st.session_state:
-    st.session_state["finished_clicks"] = 0
 if "tutor_answered" not in st.session_state:
     st.session_state["tutor_answered"] = True
 if "inter_question_time" not in st.session_state:
     st.session_state["inter_question_time"] = []
-if "stopmodal" not in st.session_state:
-    st.session_state["stopmodal"] = 0
 if 'question_time' not in st.session_state:
     st.session_state['question_time'] = [time.time()]
 if 'execution_time' not in st.session_state:
@@ -257,52 +241,14 @@ def clear_chat_history():
     st.session_state['cost'] = []
     st.session_state['total_cost'] = 0.0
     st.session_state['total_tokens'] = []
-    st.session_state['Student'] = Student.Student(client, pb = st.session_state['pb'], model = model)
     st.session_state['Tutor'] = Tutor.GraphTutor(client, pb=st.session_state['pb'], sol=st.session_state['sol'], model = model, version=st.session_state["AI_version"], tools = tools)
     #counter_placeholder.write(f"Total cost of this conversation: ${st.session_state['total_cost']:.5f}")
     exercise_name_placeholder.write(f"Exercice: {st.session_state['topic']}")
-def generate_dict_history():
-    return {
-        "student": st.session_state["student"],
-        "tutor": st.session_state["tutor"],
-        "intents": [[intent.name for intent in intent_list] for intent_list in st.session_state["intent"]],
-        "assessments": st.session_state["assessment"],
-        "total_cost": st.session_state["total_cost"],
-        "pb": st.session_state['pb'],
-        "sol": st.session_state['sol'],
-        "topic": st.session_state['topic']
-    }
-
-def save_chat_history(chat_data, filename="chat_history.json"):
-    with open(filename, 'w') as f:
-        json.dump(chat_data, f, indent=4)
-
-def load_chat_history(filename="chat_history.json"):
-    with open(filename, 'r') as f:
-        return json.load(f)
-    
-def set_chat_history_2(chat_history):
-    st.session_state['topic'] = chat_history["topic"]
-    st.session_state['tutor'] = chat_history["tutor"]
-    st.session_state['student'] = chat_history["student"]
-    st.session_state['intent'] = [[Intent[intent_name] for intent_name in intent_list] for intent_list in chat_history["intents"]]
-    st.session_state['assessment'] = chat_history["assessments"]
-    st.session_state['pb'] = chat_history["pb"]
-    st.session_state['sol'] = chat_history["sol"]
-    st.session_state['Tutor'] = Tutor.GraphTutor(client, pb=st.session_state['pb'], sol=st.session_state['sol'], model = model,version=st.session_state["AI_version"],tools=tools)
-    st.session_state['Student'] = Student.Student(client, pb = st.session_state['pb'], model = model)
-    st.session_state['model_name'] = [ 'GPT4' for c in chat_history["tutor"]]
-    st.session_state['total_tokens'] = [0 for c in chat_history["tutor"]]
-    st.session_state['cost'] = [ 0 for c in chat_history["tutor"]]
-    st.session_state['total_cost'] = chat_history["total_cost"]
-    counter_placeholder.write(f"Total cost of this conversation: ${st.session_state['total_cost']:.5f}")
-    exercise_name_placeholder.write(f"Exercice: {st.session_state['topic']}")
-
 
 ############# UI #############
 
 def remove_streamlit_hamburger():
-    # remove the hamburger in the upper right hand corner and the Made with Streamlit footer
+    """removes the hamburger menu in the upper right hand corner and the Made with Streamlit footer"""
     hide_menu_style = """
             <style>
             #MainMenu {visibility: hidden;}
@@ -312,69 +258,9 @@ def remove_streamlit_hamburger():
     st.markdown(hide_menu_style, unsafe_allow_html=True)
 
 
-st.session_state['consent'] = True
-# ############ Consent form UI #####
-# #with open("consent_form.txt", "r") as f:
-# #    consent_form_text = f.read()
-# if not st.session_state['consent']:
-#     st.set_page_config(page_title="AI Tutor", page_icon=":book:")
-#     remove_streamlit_hamburger()
-#     st.image("https://upload.wikimedia.org/wikipedia/commons/6/63/ETH_Z%C3%BCrich_wordmark.svg", width=400)
-#     st.markdown(consent_form_text.format(*[st.session_state['session_ID']]*2),unsafe_allow_html = True)
-#     if st.button("I agree to participate in the study"):
-#         st.session_state['consent'] = True
-#         st.rerun()
-
-
-
-############ Chrono UI #######
-limit_time = 60*15
-if st.session_state['topic'] == "pythagoras":
-    limit_time = 60*10
-
-def timer_display(seconds,limit):
-    time_left = max(0,limit-seconds)
-    minutes = time_left // 60
-    seconds = time_left % 60
-    return f"{minutes:02d}:{seconds:02d}"
-
-def friendly_timer_display(seconds,limit):
-    time_left = max(0,limit-seconds)
-    minutes = time_left // 60
-    seconds = time_left % 60
-    if time_left < 60:
-        return f"**You have {seconds} seconds left with the tutor**"
-    if time_left < 180:
-        return f"**You have less than 3 minutes left.**"
-    return f"You have **{limit//60} minutes** to interract with the tutor. You will be warned when little time remains."	
-    
-
-async def watch(test,container):
-        while st.session_state['elapsed_time'] < limit_time:
-            #test.markdown(f"**Time left: {timer_display(st.session_state['elapsed_time'],limit_time)}**")
-            test.markdown(friendly_timer_display(st.session_state['elapsed_time'],limit_time))
-            r = await asyncio.sleep(5)
-            st.session_state['elapsed_time'] += 5
-        st.session_state['done'] = True
-        test.markdown("**Time's up!**")
-        st.components.v1.html(js)
-        time.sleep(0.1)
-        st.rerun()
-
-async def end_countdown(end_btn):
-        while st.session_state['post_test_elapsed_time'] < 50:
-            #end_btn.markdown(f"Time left: {timer_display(st.session_state['post_test_elapsed_time'],50)}")
-            st.session_state['post_test_elapsed_time'] += 1
-            r = await asyncio.sleep(1)
-        #end_btn.markdown("Time's up!")
-        # if st.button("Finish"):
-        #     st.session_state['post'] = True
-        #     st.session_state['done'] = True
-        #     st.rerun()
-
     
 ############ Tutoring UI #####
-if st.session_state['consent'] and not st.session_state['done']:
+if True:
     #### Title
     st.set_page_config(page_title="AI Tutor", page_icon=":book:")
     ### go to top of the page
@@ -388,10 +274,6 @@ if st.session_state['consent'] and not st.session_state['done']:
     st.components.v1.html(js)
     st.markdown("<h1 style='text-align: center;'>Universal AI Tutor</h1>", unsafe_allow_html=True)
     #st.markdown("Participant ID: " + str(st.session_state['session_ID']))
-
-#################### chrono
-    test = st.empty()
-    
 
 ######################################
 
@@ -422,24 +304,14 @@ if st.session_state['consent'] and not st.session_state['done']:
     exercise_name_placeholder = st.sidebar.empty()
     exercise_name_placeholder.write(f"Exercice: {st.session_state['topic']}")
     
-    def plot():
-        plt.plot([1,-2,1])
-        st.pyplot(plt.gcf())
     
-    #clear_button = st.sidebar.button("Effacer la conversation", key="clear")
-    #save_chat_button = st.sidebar.button("Sauvegarder la conversation", key="save")
-    #file_name = st.sidebar.text_input("Enter the chat JSON filename")
-    #used_probl = st.sidebar.selectbox("OU problèmes pré-chargé",["custom", "pythagoras", "country", "consistency", "brevet_2024_1", "brevet_2024_2", "brevet_2024_3", "brevet_2024_4", "invention_easy", "invention_simplified", "consistency_easy", "fraction_3eme", "PGCD_3eme", "Proba_3eme", "SQRT_3eme", "dev_lit_3eme", "eq_3eme", "trigo_3eme", "synth_3eme", "fonction_3eme"], key='selection_prev_ex') #, on_change=erase_prev_choice)
-    #used_probl = st.sidebar.selectbox("Available problems:",["custom","consistency","country", "brevet_2024_1", "brevet_2024_2", "brevet_2024_3", "fraction_3eme", "PGCD_3eme", "Proba_3eme", "SQRT_3eme", "dev_lit_3eme", "equ_3eme", "trigo_3eme", "synth_3eme", "fonction_3eme"], key='selection_prev_ex') 
     used_probl = st.sidebar.selectbox("Available problems:",["A1P2","A1P1","A1P3"], key='selection_prev_ex') #test
+    ### to allow custom exercises as input: uncomment below
     #exercise = st.sidebar.text_area("Custom latex exercise (pick custom above)")
     #exercise_solution = st.sidebar.text_area("Custom latex solution")
     #exercise_name = st.sidebar.text_input("Exercise name")
     #load_chat_button = st.sidebar.button("Charger conversation", key="load")
     #autoplay_button = st.sidebar.button("Autoplay", key="auto")
-    autoplay_button = False
-    #print_msg_button = st.sidebar.button("log", key="log")
-    print_msg_button = False
     change_exercise_button = st.sidebar.button("Change exercise", key="change")
 
 
@@ -449,6 +321,7 @@ if st.session_state['consent'] and not st.session_state['done']:
     st.write("Use this [link](%s) to provide feedback on every test session you have. You are randomly assigned to different versions of the tutor with various level of ability. Feel free to change the exercise you are testing the AI on by using the dropdown menu on the left and clicking 'change exercise'" % url_form)
     st.subheader("Problem")
     st.markdown(st.session_state['pb']) 
+    #### To display the exercise's solution on screen, uncomment below
     #st.subheader("Solution")
     #st.markdown(st.session_state['sol'])
     st.subheader("Conversation")
@@ -457,20 +330,12 @@ if st.session_state['consent'] and not st.session_state['done']:
     response_container = st.container()
     container = st.container()
 
-    # Map model names to OpenAI model IDs
-    # if model_name == "GPT-4o mini":
-    #     model = "gpt-4o-mini"
-    # else:
-    #     model = "gpt-4o"#"myGPT4"
-
 
     ############# UX #############
 
     ### Change exercise
-
-
     if change_exercise_button:
-        
+        ### To allow for custom exercises, uncomment below
         # if exercise!= None and used_probl == "custom":
 
         #     st.session_state['pb'] = exercise
@@ -507,12 +372,6 @@ if st.session_state['consent'] and not st.session_state['done']:
                     response = st.write(msg_s)
                 #message(msg_s, is_user=True, key=str(i) + '_user')
             turn = i
-            #st.write(
-            #    f"Model used: {st.session_state['model_name'][i]}; Number of tokens: {st.session_state['total_tokens'][i]}; Cost: ${st.session_state['cost'][i]:.5f}")
-            
-            ### uncomment below for non user-study branch
-            #counter_placeholder.write(f"Total Cost: ${st.session_state['total_cost']:.5f}")
-            #exercise_name_placeholder.write(f"Exercice: {st.session_state['topic']}")
 
 
     with container:
@@ -527,7 +386,7 @@ if st.session_state['consent'] and not st.session_state['done']:
             st.session_state['tutor_answered'] = False
             # log student prompt
             student_utterance, student_total_tokens, student_prompt_tokens, student_completion_tokens = user_input,0,0,0
-            time_of_question = time.time()#st.session_state['elapsed_time']
+            time_of_question = time.time()
             st.session_state['question_time'].append(time_of_question)
             st.session_state['time_between_questions'].append(time_of_question - st.session_state['question_time'][-2])
             student_utterance.replace("*","\*").replace("_","\_").replace('$','\$')
@@ -542,7 +401,7 @@ if st.session_state['consent'] and not st.session_state['done']:
                 with st.chat_message(name="ai",avatar=url_prof_image):
                     st.write("")
                     output, tutor_total_tokens, tutor_prompt_tokens, tutor_completion_tokens, intent, assessment,extra = st.session_state['Tutor'].get_response(st.session_state['student'] + [student_utterance], st.session_state['tutor'])
-                    #response = st.write_stream(output)
+                    #response = st.write_stream(output) # to support stream output
                     st.write(output) # bc no stream
                     response = output # bc no stream
                     print("-----------------------------------------------")
@@ -573,10 +432,11 @@ if st.session_state['consent'] and not st.session_state['done']:
             if model_name == "GPT-4o mini":
                 print("inexpensive model")
                 cost = (prompt_tokens * 0.5 + completion_tokens * 1.5) / 1000000
-            else:
+            else: # does only work with gpt-4o mini/not mini. Doesn't work with llama etc
                 print("expensive model")
                 cost = (prompt_tokens * 5 + completion_tokens * 15) / 1000000
 
+            # prepare log
             st.session_state['cost'].append(cost)
             st.session_state['total_cost'] += cost
             st.session_state['student'].append(student_utterance)
@@ -589,12 +449,13 @@ if st.session_state['consent'] and not st.session_state['done']:
             st.session_state['tutor_answered'] = True
             st.session_state['execution_time'].append(time.time()-time_of_question)
             st.session_state['extra_info'].append({key:repr(extra[key]) for key in extra})
-            #### commit to GitHub
+            #### commit log to GitHub 
             generate_and_commit(g,repo)
             ####
     st.subheader("Whiteboard")
     st.pyplot(plt.gcf())
 
+    # ask for user's name when they open the website (for the log)
     @st.dialog("Provide your name")
     def get_user_name(name):
         st.write(f"What's you name?")
@@ -604,64 +465,3 @@ if st.session_state['consent'] and not st.session_state['done']:
             st.rerun()
     if 'username' not in st.session_state:
         get_user_name("Cast your vote")
-    # whiteboard('plt.plot([1,-2,1])')
-
-
-    ####### End Tutoring UI #######
-    # def toggle():
-    #     st.session_state['done'] = True
-    # st.write("</br>You still have some time left with the tutor.</br>Only press the button below if you are done with the exercise **and if the tutor told you goodbye.**</br>You won't be able to come back to this page.",unsafe_allow_html=True)
-    # st.button("I confirm I have to exit",on_click=toggle)
-
-
-    #asyncio.run(watch(test,container))
-    
-
-# elif st.session_state['done'] and not st.session_state['post']:
-    
-#     st.set_page_config(page_title="AI Tutor", page_icon=":book:")
-#     remove_streamlit_hamburger()
-#     modal = Modal(key="Make sure that you answered the form",title="Please make sure you answered the form")
-
-#     ### go to top of the page
-#     js = '''
-#     <script>
-#         var body = window.parent.document.querySelector(".main");
-#         console.log(body);
-#         body.scrollTop = 200;
-#     </script>
-#     '''
-#     st.components.v1.html(js)
-
-#     iframe = st.empty()
-#     forms_url = f"https://docs.google.com/forms/d/e/1FAIpQLSeku8__OLLT0FqQeP6xSbeYFcKhjjFn0mE8JSwNyLt9zcN9Qw/viewform?usp=pp_url&entry.122853667={st.session_state['session_ID']}&hl=en"
-#     st.write("\nThank you for testing the AI! **Please fill out the short survey above to complete the study.** This will take less than 1 minute.")
-#     iframe.markdown(f'<iframe src="{forms_url}" title="Survey", width="100%", height="600"></iframe>',unsafe_allow_html=True)
-#     end_btn = st.empty()
-#     if end_btn.button("I declare that I completed the above form"):
-#         st.session_state['finished_clicks']+=1
-#         if st.session_state['finished_clicks'] == 1:
-#             #dialog box
-#             with modal.container():
-#                 st.write("**Please make sure that you answered the survey and that you sent it with the purple \"Send\" button.**\nOnce you sent the form, you may click again on this button to proceed.")
-#         elif st.session_state['finished_clicks'] == 2:
-#             st.session_state['post'] = True
-#             ### go to top of the page
-#             js = ''' "
-#             <script>
-#                 var body = window.parent.document.querySelector(".main");
-#                 console.log(body);
-#                 body.scrollTop = 30;
-#             </script>
-#             '''
-#             st.components.v1.html(js)
-#             time.sleep(0.05)
-#             st.rerun()
-
-# # elif st.session_state['post']:
-# #     st.set_page_config(page_title="AI tutor", page_icon=":book:")
-# #     remove_streamlit_hamburger()
-# #     st.markdown(post_info_notice_text.format(*[st.session_state["AI_version"],st.session_state['session_ID']]),unsafe_allow_html = True)
-# #     st.markdown(f"</br></br>If you are curious, here is the solution of the problem you worked on: </br></br>{st.session_state['sol']}",unsafe_allow_html=True)
-# #     st.markdown("</br></br><center><span style='color: gray;'>You may close this tab</span></center>",unsafe_allow_html=True)
-
