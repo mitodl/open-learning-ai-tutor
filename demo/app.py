@@ -97,7 +97,7 @@ tools = [send_message_to_student,whiteboard,calculator,execute_python,R_code_int
 
 ##### Github #####
 # hacky way to log the conversations: I commit a json file on Github after each message.
-#  Of course we should use something cleaner.
+# Of course we should use something cleaner.
 def commit(g,repo,content):
     file_path = f"logs/{st.session_state['session_ID']}.txt"
     branch_name = "main"
