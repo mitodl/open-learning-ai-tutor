@@ -22,7 +22,7 @@ class Intent(Enum):
     A_CHALLENGE = 21
     A_CONFIDENCE = 22
     A_CONTROL = 23
-    A_CURIOUSITY = 24
+    A_CURIOSITY = 24
 
     #Generic category
     G_GREETINGS = 31

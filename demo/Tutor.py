@@ -112,7 +112,7 @@ class GraphTutor(Tutor):
 
         tool_node = None  
         if self.tools != None and self.tools != []:
-            client = client.bind_tools(self.tools)
+            client = client.bind_tools(self.tools, parallel_tool_calls=False)
             tool_node = ToolNode(self.tools)
         self.client = client
 
@@ -120,22 +120,32 @@ class GraphTutor(Tutor):
         self.intermediary = Intermediary.GraphIntermediary(client = self.client, model = model, intent_history = intent_history, assessment_history = assessment_history, version=version)
 
         # graph
-        def should_continue(state: MessagesState) -> Literal["tools", END]:
+        def should_continue(state: MessagesState) -> Literal["tools","agent", END]:
             messages = state['messages']
             last_message = messages[-1]
-            print("\n---last message:\n")
-            print(last_message)
+            #print("\n---last message:\n")
+            #print(last_message)
             # If the LLM makes a tool call, then we route to the "tools" node
             if last_message.tool_calls:
-                self.tools_used.append(   [last_message.tool_calls[-1]['name'],last_message.tool_calls[-1]['args']] )
-                if last_message.tool_calls[-1]['name'] == "send_message_to_student":
-                    self.final_response = last_message.tool_calls[-1]['args']['query']
-                    return END
+                print("TOOL USED")
+                self.tools_used.append([last_message.tool_calls[-1]['name'],last_message.tool_calls[-1]['args']])
                 print("tool call detected")
                 print(last_message.tool_calls)
                 return "tools"
             # Otherwise, we stop (reply to the user)
-            return END
+            return "agent"
+        
+        # graph
+        def should_stop(state: MessagesState) -> Literal["agent", END]:
+            messages = state['messages']
+            penultimate_message = messages[-2]
+            # If the LLM makes a tool call, then we route to the "tools" node
+            if penultimate_message.tool_calls:
+                if penultimate_message.tool_calls[-1]['name'] == "text_student":
+                    self.final_response = penultimate_message.tool_calls[-1]['args']['nessage_to_student']
+                    print("\033[31mSEND MSG USED\033[0m")
+                    return END
+            return "agent"
 
 
         # Define the function that calls the model
@@ -154,22 +164,35 @@ class GraphTutor(Tutor):
         workflow.add_node("tools", tool_node)
 
         # Set the entrypoint as `agent`
+        # This means that this node is the first one called
         workflow.add_edge(START, "agent")
 
-        # conditional edge
+        # We now add a conditional edge
         workflow.add_conditional_edges(
+            # First, we define the start node. We use `agent`.
+            # This means these are the edges taken after the `agent` node is called.
             "agent",
-            # function that will determine which node is called next.
+            # Next, we pass in the function that will determine which node is called next.
             should_continue,
         )
 
         # We now add a normal edge from `tools` to `agent`.
         # This means that after `tools` is called, `agent` node is called next.
-        workflow.add_edge("tools", 'agent')
+        workflow.add_conditional_edges(
+            # First, we define the start node. We use `agent`.
+            # This means these are the edges taken after the `agent` node is called.
+            "tools",
+            # Next, we pass in the function that will determine which node is called next.
+            should_stop,
+        )
 
         # Initialize memory to persist state between graph runs
         checkpointer = MemorySaver()
 
+        # Finally, we compile it!
+        # This compiles it into a LangChain Runnable,
+        # meaning you can use it as you would any other runnable.
+        # Note that we're (optionally) passing the memory when compiling the graph
         app = workflow.compile(checkpointer=checkpointer)
         self.app = app
 
@@ -177,12 +200,12 @@ class GraphTutor(Tutor):
 
     def get_response(self,messages_student,messages_tutor,max_tokens=1500):
         
-        print("\n---")
+        #print("\n---")
         #print("tutor called using model ", self.model)
         prompt,intent,assessment,prompt_tokens,completion_tokens,docs,rag_questions = self.intermediary.get_prompt(self.pb,self.sol,messages_student,messages_tutor,open=self.open)
         #prompt.append({"role": "system", "content": "Ask the student to find by themself a problem with their answer without giving any hint"})
-        print("\n\nTUTOR prompt generated:")
-        print(prompt)
+        #print("\n\nTUTOR prompt generated:")
+        #print(prompt)
         
         
         # completion = self.client.chat.completions.create(
@@ -204,15 +227,22 @@ class GraphTutor(Tutor):
                 if type(message) != type(AIMessage('')):
                     response = ''
                 elif message.content != '':
-                    response += message.content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","") + "\n"
+                    response += message.content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$") + "\n"
             #response = final_state['messages'][-1].content
         else:
-            response = response.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","") + "\n"
+            response = response.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$") + "\n"
         
-        token_info = final_state['messages'][-1].response_metadata['token_usage']
-        print("token_info:")
-        print(token_info)
-        print("---")
+        if len(final_state["messages"])>=2:
+            penultimate_message = final_state["messages"][-2]
+            if penultimate_message.tool_calls[-1]['name'] == "text_student":
+                token_info = penultimate_message.response_metadata['token_usage']
+            else:
+                token_info = final_state['messages'][-1].response_metadata['token_usage']
+        else:
+            token_info = final_state['messages'][-1].response_metadata['token_usage']
+        #print("token_info:")
+        #print(token_info)
+        #print("---")
         prompt_tokens += token_info['prompt_tokens']
         completion_tokens += token_info['completion_tokens']
         total_tokens = prompt_tokens + completion_tokens

@@ -31,6 +31,9 @@ class SimpleIntentSelector(IntentSelector):
         intents = []
         if 'l' in assessment_codes: # here l is irrelevant, not motiv
             return [Intent.G_REFUSE]
+        if 'm' in assessment_codes:
+            intents.append(Intent.S_STATE)
+            intents.append(Intent.A_CURIOSITY)
         if 'i' in assessment_codes:
             intents.append(Intent.S_OFFLOAD)
         if 'h' in assessment_codes:

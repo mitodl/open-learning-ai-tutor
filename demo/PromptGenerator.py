@@ -112,7 +112,7 @@ The solution for this problem is :
 {'""' if self.version=="V2" and retrieved_text!=None else ""}
 ---
 
-Provide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct."""
+Provide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student's progresses and right answers. Your student can only see the text you send them using your `text_student` tool, the rest of your thinking is hidden to them."""
         # modify above to integrate intent.
         messages = utils.generate_messages(student_messages,tutor_messages,system_msg,"tutor")
         
@@ -132,17 +132,17 @@ Provide the least amount of scaffolding possible to help the student solve the p
         if Intent.P_CONNECTION in intents:
             intent_prompt += "Underline the implication of the answer in the context of the problem.\n"
         if Intent.S_SELFCORRECTION in intents:
-            intent_prompt += "Make the student identify by themself the error in their answer if there is one.\n"
+            intent_prompt += "If there is a mistake in the student's answer, tell the student there is a mistake in an encouraging way and make them identify it *by themself*.\n"
         if Intent.S_CORRECTION in intents:
-            intent_prompt += "Correct the student's mistake if there is one, by giving them a hint.\n"
+            intent_prompt += "Correct the student's mistake if there is one, by stating or hinting them what is wrong.\n"
         if Intent.S_STRATEGY in intents:
-            intent_prompt += "Encourage and make the student find on their own what is the next step to solve the problem, for example by asking a question. You can also move on to the next part\n"#"Encourage and make the student find on their own what is the next step to solve the problem by asking them what is the next step.\n"
+            intent_prompt += "Acknowledge the progress. Encourage and make the student find on their own what is the next step to solve the problem, for example by asking a question. You can also move on to the next part\n"#"Encourage and make the student find on their own what is the next step to solve the problem by asking them what is the next step.\n"
         if Intent.S_HINT in intents:
             intent_prompt += "Give a hint to the student to help them find the next step. Do *not* provide the answer.\n"
         if Intent.S_SIMPLIFY in intents:
             intent_prompt += "Consider first a simpler version of the problem.\n"
         if Intent.S_STATE in intents:
-            intent_prompt += "State the theorem or definition the student is asking about.\n"
+            intent_prompt += "State the theorem, definition or programming command the student is asking about. You can use the whiteboard tool to explain. Keep the original exercise in mind. DO NOT REVEAL ANY PART OF THE EXERCISE'S SOLUTION: use other examples.\n"
         if Intent.S_OFFLOAD in intents:
             intent_prompt += "Correct and perform the numerical computation for the student.\n" 
         if Intent.A_CHALLENGE in intents:
@@ -152,7 +152,7 @@ Provide the least amount of scaffolding possible to help the student solve the p
         if Intent.A_CONTROL in intents:
             intent_prompt += "Promote a sense of control.\n"
         if Intent.A_CURIOUSITY in intents:
-            intent_prompt += "Evoke curiosity.\n"
+            intent_prompt += ""#"Evoke curiosity.\n" #TODO implement curiosity/teaching
         if Intent.G_GREETINGS in intents:
             intent_prompt += "Say goodbye and end the conversation\n"
         if Intent.G_OTHER in intents:
@@ -162,10 +162,11 @@ Provide the least amount of scaffolding possible to help the student solve the p
         if intent_prompt!="":
             if Intent.S_CORRECTION in intents or Intent.S_CORRECTION in intents or Intent.S_OFFLOAD in intents:
                 intent_prompt += "Consider the student's mistake, if there is one.\n"
-        intent_prompt+="Conisder ONE question at a time. Unless the student correctly answered multiple in one message"
+        intent_prompt+="Conisder ONE question at a time, unless the student correctly answered multiple in one message."
         
         if Intent.G_REFUSE in intents:
             intent_prompt = "The student is asking something irrelevant to the problem. Explain politely that you can't help them on topics other than the problem. DO NOT ANSWER THEIR REQUEST\n"
+        intent_prompt += " Your student can only see the text you send them using your `text_student` tool, the rest of your thinking is hidden to them."
         messages.append({"role": "system", "content": intent_prompt})
         print("intent prompt:")
         print(intent_prompt)

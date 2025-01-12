@@ -52,11 +52,12 @@ d) The student provided an intuitive or incomplete solution
 e) The student's answer is not clear or ambiguous
 f) The student correctly answered the tutor's previous question
 g) The student is explicitly asking about how to solve the problem
-h) The student is explicitly asking the tutor to state a specific theorem, definition, formula or programming command that is not the direct answer to the question they have to solve.
+h) The student is explicitly asking the tutor to state a specific theorem, definition, formula or programming command that is not the **direct answer** to the question they have to solve.
 i) The student is explicitly asking the tutor to perform a numerical calculation
 j) The student and tutor arrived at a complete solution for the entirety of the initial *Problem Statement*
 k) The student and tutor arrived at a complete solution for the entirety of the initial *Problem Statement* equivalent to the method provided in the *Provided Solution*
-l) The student's message is irrelevant to the problem at hand
+l) The student's message is *entirely* irrelevant to the problem at hand or to the material covered by the exercise.
+m) The student is asking or continuing a conversation about additionnal information related to or that goes beyond the material covered by the problem.
 
 Proceed step by step. First briefly justify your selection, then provide a string containing the selected letters.
 Answer in the following JSON format ONLY and do not output anything else:
@@ -71,7 +72,7 @@ Analyze the last student's utterance.
 {{"""
         return purpose
 
-    def create_prompt(self,pb,sol,tutor_messages,student_messages):
+   def create_prompt(self,pb,sol,tutor_messages,student_messages):
         
         purpose = self.get_purpose(pb,sol)
         #print("DEBUG")
@@ -91,8 +92,8 @@ Analyze the last student's utterance.
 
     def assess(self,pb,sol,student_messages,tutor_messages):
         prompt = self.create_prompt(pb,sol,tutor_messages,student_messages)
-        print("Assessor called with prompt:")
-        print(print_logs(prompt))
+        #print("Assessor called with prompt:")
+        #print(print_logs(prompt))
         client = self.client
         completion = client.chat.completions.create(
             model=self.model,
@@ -260,14 +261,14 @@ class GraphAssessor(Assessor):
                 )
             ]
         prompt.append(HumanMessage(f"Tutor: \"{tutor_messages[-1]}\"\nStudent: \"{student_messages[-1]}\"\n" ))
-        print("\n\nAssessor prompt is:\n",prompt)
+        # print("\n\nAssessor prompt is:\n",prompt)
         return prompt
     
 
     def assess(self,pb,sol,student_messages,tutor_messages):
         prompt = self.create_prompt(pb,sol,tutor_messages,student_messages)
-        print("Assessor called with prompt:")
-        print(print_logs(prompt))
+        # print("Assessor called with prompt:")
+        # print(print_logs(prompt))
 
         final_state = self.app.invoke(
         {"messages": prompt},
