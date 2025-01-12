@@ -46,16 +46,14 @@ repo = g.get_user().get_repo('Universal_AI') # repo name
 
 ## langgraph's tools creation
 @tool
-def send_message_to_student(query: str):
-    """A tool to send a message to your student. This tool is the only whay for you to communicate with your student. The input should be your message. After the message is sent, you will wait for the student's next message."""
-    return query
+def text_student(nessage_to_student: str):
+    """A tool to send a message to your student. This tool is the only way for you to communicate with your student. The input should be your message. After the message is sent, you will wait for the student's next message."""
+    return nessage_to_student
 
-#whiteboard_used = False
 @tool
 def whiteboard(query):
     """A whiteboard to show graphs to your student. The input should be valid matplotlib plot commands. refer to this tool as the 'whiteboard' and don't mention you use python"""
-    #whiteboard_used = True
-    print('\n\nWHITEBOARD UPDATED\n\n') 
+    whiteboard_used = True
     try:
         exec(query)
         print('\n\nWHITEBOARD UPDATED\n\n') 
@@ -92,7 +90,7 @@ def R_code_interpreter(code:str):
     """A R code interpreter. Use this tool to execute R code. Input should be a valid R command. If you want to see the output of a value, you should print it out with `print(...)`"""
     return sbx.run_code(code, language = 'r' )
 
-tools = [send_message_to_student,whiteboard,calculator,execute_python,R_code_interpreter]
+tools = [text_student,whiteboard,calculator,execute_python,R_code_interpreter]
 #####
 
 ##### Github #####
