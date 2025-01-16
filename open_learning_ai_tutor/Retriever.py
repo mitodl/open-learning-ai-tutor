@@ -17,7 +17,7 @@ from langchain_together import ChatTogether
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from concurrent.futures import ThreadPoolExecutor
-from Books import analytics_book
+from open_learning_ai_tutor.Books import analytics_book
 
 
 def generate_database(filepath,title,chunk_size,overlap,retriever_type="recursive"):

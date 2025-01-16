@@ -1,5 +1,5 @@
-import utils
-from taxonomy import Intent
+import open_learning_ai_tutor.utils as utils
+from open_learning_ai_tutor.taxonomy import Intent
 
 # Old version. We used SimplePromptGenerator instead (see below)
 class PromptGenerator():

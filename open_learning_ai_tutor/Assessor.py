@@ -10,8 +10,8 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
-from utils import print_logs
-from Retriever import Retriever
+from open_learning_ai_tutor.utils import print_logs
+from open_learning_ai_tutor.Retriever import Retriever
 # not used anymore:
 #Moreover select if relevant some emotional states from "l,m":
 #l) The student shows a strong lack of motivation
@@ -72,7 +72,7 @@ Analyze the last student's utterance.
 {{"""
         return purpose
 
-   def create_prompt(self,pb,sol,tutor_messages,student_messages):
+    def create_prompt(self,pb,sol,tutor_messages,student_messages):
         
         purpose = self.get_purpose(pb,sol)
         #print("DEBUG")

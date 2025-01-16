@@ -1,10 +1,10 @@
 # By Romain Puech, Jan 2025
 import json
-import Tutor
-import Assessor
-import IntentSelector
-import PromptGenerator
-import Intermediary
+import open_learning_ai_tutor.Tutor as Tutor
+import open_learning_ai_tutor.Assessor as Assessor
+import open_learning_ai_tutor.IntentSelector as IntentSelector
+import open_learning_ai_tutor.PromptGenerator as PromptGenerator
+import open_learning_ai_tutor.Intermediary as Intermediary
 
 
 

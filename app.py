@@ -18,7 +18,7 @@ import time
 import streamlit as st
 
 import tiktoken
-import Tutor
+import open_learning_ai_tutor.Tutor
 from e2b_code_interpreter import Sandbox
 from github import Auth, Github
 from langchain_core.tools import tool
@@ -27,8 +27,8 @@ from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain_together import ChatTogether
 from matplotlib import pyplot as plt
-from problems import get_pb_sol
-from taxonomy import Intent
+from open_learning_ai_tutor.problems import get_pb_sol
+from open_learning_ai_tutor.taxonomy import Intent
 
 
 # API keys
