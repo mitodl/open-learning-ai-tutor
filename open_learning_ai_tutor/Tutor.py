@@ -1,6 +1,6 @@
 from typing import Literal
 
-import Intermediary
+import open_learning_ai_tutor.Intermediary as Intermediary
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain_together import ChatTogether

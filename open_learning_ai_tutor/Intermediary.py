@@ -1,7 +1,7 @@
-import PromptGenerator
-import IntentSelector
-import Assessor
-from taxonomy import Intent
+import open_learning_ai_tutor.PromptGenerator as PromptGenerator
+import open_learning_ai_tutor.IntentSelector as IntentSelector
+import open_learning_ai_tutor.Assessor as Assessor
+from open_learning_ai_tutor.taxonomy import Intent
 
 class Intermediary():
     def __init__(self,client,model,assessor = None, intentSelector=None,promptGenerator = None,intent_history = [],assessment_history=[]) -> None:
