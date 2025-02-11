@@ -1,7 +1,9 @@
-import open_learning_ai_tutor.utils as utils
-from open_learning_ai_tutor.taxonomy import Intent
+import utils
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+#from problems import create_msgs
+from taxonomy import Intent
 
-# Old version. We used SimplePromptGenerator instead (see below)
+# Old version. We used SimplePromptGenerator2 instead.
 class PromptGenerator():
     def __init__(self, version = 'V1') -> None:
         self.version = version
@@ -68,7 +70,7 @@ Provide the least amount of scaffolding possible to help the student solve the p
             intent_prompt += "Bolster the student's confidence.\n"
         if Intent.A_CONTROL in intents:
             intent_prompt += "Promote a sense of control.\n"
-        if Intent.A_CURIOUSITY in intents:
+        if Intent.A_CURIOSITY in intents:
             intent_prompt += "Evoke curiosity.\n"
         if Intent.G_GREETINGS in intents:
             intent_prompt += "Answer any final question and say goodbye"
@@ -78,16 +80,26 @@ Provide the least amount of scaffolding possible to help the student solve the p
         if intent_prompt!="":
             #intent_prompt = "Your intent is to:\n" + intent_prompt
             messages.append({"role": "system", "content": intent_prompt})
-        print("intent prompt:")
-        print(intent_prompt)
+        #print("intent prompt:")
+        #print(intent_prompt)
         return messages
 
+    
+class SimplePromptGenerator2(PromptGenerator):
+    def __init__(self, chat_history = [], options = dict()) -> None:
+        if "version" in options:
+            self.version = options["version"]
+        else:
+            self.version = 'V1'
 
-# THIS IS THE ONE USED
-class SimplePromptGenerator(PromptGenerator):
-    def get_prompt(self,pb,sol,student_messages,tutor_messages,intents, retrieved_text=None):
-        print("HERE")
-        print(retrieved_text)
+        self.chat_history = chat_history
+
+
+    def get_prompt2(self,pb,sol,intents,options = dict()):
+        if "docs" in options:
+            retrieved_text = options["docs"]
+            if retrieved_text: print(retrieved_text)
+        # re-create the system message each time because it depends on the retrieved docuemnts
         system_msg  = \
         f"""Act as an experienced tutor. You are comunicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:
     • Promote a sense of challenge, curiosity, feeling of control
@@ -114,8 +126,17 @@ The solution for this problem is :
 
 Provide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student's progresses and right answers. Your student can only see the text you send them using your `text_student` tool, the rest of your thinking is hidden to them."""
         # modify above to integrate intent.
-        messages = utils.generate_messages(student_messages,tutor_messages,system_msg,"tutor")
+
+        if len(self.chat_history)==0:
+            raise ValueError("Chat history is empty")
         
+        if len(self.chat_history)>0:
+            if isinstance(self.chat_history[0],SystemMessage):
+                self.chat_history[0] = SystemMessage(content=system_msg)
+            else:
+                self.chat_history.insert(0,SystemMessage(content=system_msg))
+        else:
+            self.chat_history.insert(0,SystemMessage(content=system_msg))
     
         # add part about the tutor's intent
         intent_prompt = ""
@@ -151,8 +172,8 @@ Provide the least amount of scaffolding possible to help the student solve the p
             intent_prompt += "Bolster the student's confidence.\n"
         if Intent.A_CONTROL in intents:
             intent_prompt += "Promote a sense of control.\n"
-        if Intent.A_CURIOUSITY in intents:
-            intent_prompt += ""#"Evoke curiosity.\n" #TODO implement curiosity/teaching
+        if Intent.A_CURIOSITY in intents:
+            intent_prompt += ""#"Use the whiteboard tool to give a visual explanation"#"Evoke curiosity.\n" #TODO implement curiosity/teaching
         if Intent.G_GREETINGS in intents:
             intent_prompt += "Say goodbye and end the conversation\n"
         if Intent.G_OTHER in intents:
@@ -167,7 +188,8 @@ Provide the least amount of scaffolding possible to help the student solve the p
         if Intent.G_REFUSE in intents:
             intent_prompt = "The student is asking something irrelevant to the problem. Explain politely that you can't help them on topics other than the problem. DO NOT ANSWER THEIR REQUEST\n"
         intent_prompt += " Your student can only see the text you send them using your `text_student` tool, the rest of your thinking is hidden to them."
-        messages.append({"role": "system", "content": intent_prompt})
-        print("intent prompt:")
-        print(intent_prompt)
-        return messages
+        self.chat_history.append(SystemMessage(content=intent_prompt))
+        #print("intent prompt:")
+        #print(intent_prompt)
+        return self.chat_history
+    

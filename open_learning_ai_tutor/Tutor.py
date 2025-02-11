@@ -1,6 +1,6 @@
 from typing import Literal
 
-import open_learning_ai_tutor.Intermediary as Intermediary
+import Intermediary
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain_together import ChatTogether
@@ -11,7 +11,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 
-# We use GraphTutor, NOT the base class. See below
+
 class Tutor():
 
     def __init__(self,client,pb,sol,model="gpt-4o-2024-05-13",intermediary=None,intent_history = [],assessment_history=[],is_open=True, version="V1") -> None:
@@ -19,13 +19,18 @@ class Tutor():
         print("Creating tutor...")
         print("---")
         self.client = client
-        self.model = model
+        self.model = model#"myGPT4"#model
         self.pb,self.sol = pb,sol
         self.open = is_open
         if not intermediary is None:
             self.intermediary = intermediary
+        elif version == "V2":
+            self.intermediary = Intermediary.EmptyIntermediary(client = self.client,model = self.model, intent_history = intent_history, assessment_history = assessment_history)
+        elif version == "V3":
+            self.intermediary = Intermediary.NextStepIntermediary(client = self.client,model = self.model, intent_history = intent_history, assessment_history = assessment_history)
         else:
-            self.intermediary = Intermediary.GraphIntermediary(client = self.client,model = self.model, intent_history = intent_history, assessment_history = assessment_history)
+            # notably if V1
+            self.intermediary = Intermediary.SimpleIntermediary(client = self.client,model = self.model, intent_history = intent_history, assessment_history = assessment_history)
 
     def update_client(self,client):
         self.client = client
@@ -56,10 +61,10 @@ class Tutor():
         completion_tokens += completion.usage.completion_tokens
         total_tokens = prompt_tokens + completion_tokens
 
-        response = response.replace("\(","$").replace("\)","$").replace("\[","$$").replace("\]","$$")
-        print("tutor answers:")
-        print(response)
-        print("---")
+        response = response.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","")
+        # print("tutor answers:")
+        # print(response)
+        # print("---")
         return response, total_tokens, prompt_tokens, completion_tokens, intent, assessment
     
     def get_response_stream(self,messages_student,messages_tutor,max_tokens=1500):
@@ -82,12 +87,19 @@ class Tutor():
         #print("---")
         total_tokens = prompt_tokens + completion_tokens
         return stream, total_tokens, prompt_tokens, completion_tokens, intent, assessment
-    
-class GraphTutor(Tutor):
+ 
+class GraphTutor2(Tutor):
 
-    def __init__(self,client,pb,sol,model="gpt-4o-mini",intermediary=None,intent_history = [],assessment_history=[],is_open=True, version="V1", tools = None) -> None:
+    def __init__(self,client,pb,sol,model="gpt-4o-mini",intermediary=None,intent_history = [],assessment_history=[],tools = None, options = dict()) -> None:
         self.pb,self.sol = pb,sol
-        self.open = is_open
+        if "open" in options:
+            self.open = options["open"]
+        else:
+            self.open = True
+        if "version" in options:
+            self.version = options["version"]
+        else:
+            self.version = "V1"
         self.model = model
         self.final_response = None
         self.tools_used = []
@@ -117,23 +129,23 @@ class GraphTutor(Tutor):
         self.client = client
 
         # version and init
-        self.intermediary = Intermediary.GraphIntermediary(client = self.client, model = model, intent_history = intent_history, assessment_history = assessment_history, version=version)
-
+        self.intermediary = None
+        if not intermediary is None:
+            self.intermediary = intermediary
+        else:
+            raise ValueError("intermediary is None")
         # graph
         def should_continue(state: MessagesState) -> Literal["tools","agent", END]:
             messages = state['messages']
             last_message = messages[-1]
-            #print("\n---last message:\n")
-            #print(last_message)
             # If the LLM makes a tool call, then we route to the "tools" node
             if last_message.tool_calls:
-                print("TOOL USED")
+                #print("TOOL USED")
                 self.tools_used.append([last_message.tool_calls[-1]['name'],last_message.tool_calls[-1]['args']])
-                print("tool call detected")
-                print(last_message.tool_calls)
                 return "tools"
             # Otherwise, we stop (reply to the user)
-            return "agent"
+            self.final_response = messages[-1].content
+            return END
         
         # graph
         def should_stop(state: MessagesState) -> Literal["agent", END]:
@@ -142,8 +154,8 @@ class GraphTutor(Tutor):
             # If the LLM makes a tool call, then we route to the "tools" node
             if penultimate_message.tool_calls:
                 if penultimate_message.tool_calls[-1]['name'] == "text_student":
-                    self.final_response = penultimate_message.tool_calls[-1]['args']['nessage_to_student']
-                    print("\033[31mSEND MSG USED\033[0m")
+                    self.final_response = penultimate_message.tool_calls[-1]['args']['message_to_student']
+                    # print("\033[31mSEND MSG USED\033[0m")
                     return END
             return "agent"
 
@@ -189,23 +201,45 @@ class GraphTutor(Tutor):
         # Initialize memory to persist state between graph runs
         checkpointer = MemorySaver()
 
-        # Finally, we compile it!
-        # This compiles it into a LangChain Runnable,
-        # meaning you can use it as you would any other runnable.
-        # Note that we're (optionally) passing the memory when compiling the graph
         app = workflow.compile(checkpointer=checkpointer)
         self.app = app
 
         
 
-    def get_response(self,messages_student,messages_tutor,max_tokens=1500):
+    def get_response2(self,max_tokens=1500):
         
-        #print("\n---")
+        prompt,intent,assessment,metadata = self.intermediary.get_prompt2(self.pb,self.sol)
+
+        final_state = self.app.invoke(
+            {"messages": prompt},
+            config={"configurable": {"thread_id": 42}}
+        )
+
+        return final_state, intent, assessment, metadata
+    
+    def get_response2_given_prompt(self,prompt,max_tokens=1500):
+        print("\n\n----------------GET RESPONSE 2 GIVEN PROMPT----------------\n\n")
+        for msg in prompt:
+            print(msg)
+            print(type(msg))
+            print("\n\n")
+        print("\n\n----------------GET RESPONSE 2 GIVEN PROMPT----------------\n\n")
+        final_state = self.app.invoke(
+            {"messages": prompt},
+            config={"configurable": {"thread_id": 42}}
+        )
+
+        return final_state
+    
+    def get_response_stream(self,messages_student,messages_tutor,max_tokens=1500):
+        #TODO get_responses (plural)
+        raise NotImplementedError("Stream not implemented for graph tutor")
+        print("\n---")
         #print("tutor called using model ", self.model)
-        prompt,intent,assessment,prompt_tokens,completion_tokens,docs,rag_questions = self.intermediary.get_prompt(self.pb,self.sol,messages_student,messages_tutor,open=self.open)
+        prompt,intent,assessment,prompt_tokens,completion_tokens = self.intermediary.get_prompt(self.pb,self.sol,messages_student,messages_tutor,open=self.open)
         #prompt.append({"role": "system", "content": "Ask the student to find by themself a problem with their answer without giving any hint"})
-        #print("\n\nTUTOR prompt generated:")
-        #print(prompt)
+        print("prompt generated:")
+        #print_logs(prompt)
         
         
         # completion = self.client.chat.completions.create(
@@ -217,44 +251,26 @@ class GraphTutor(Tutor):
             {"messages": prompt},
             config={"configurable": {"thread_id": 42}}
         )
-        response = self.final_response
-        tools_used = self.tools_used
-        self.final_response = None
-        self.tools_used = []
-        if response is None:
-            #print("final_state:\n\n",final_state['messages'])
-            for message in final_state['messages']:
-                if type(message) != type(AIMessage('')):
-                    response = ''
-                elif message.content != '':
-                    response += message.content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$") + "\n"
-            #response = final_state['messages'][-1].content
-        else:
-            response = response.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$") + "\n"
+        response = ''
+        #print("final_state:\n\n",final_state['messages'])
+        for message in final_state['messages']:
+            if type(message) != type(AIMessage('')):
+                response = ''
+            elif message.content != '':
+                response += message.content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","") + "\n"
+        #response = final_state['messages'][-1].content
         
-        if len(final_state["messages"])>=2:
-            penultimate_message = final_state["messages"][-2]
-            if penultimate_message.tool_calls[-1]['name'] == "text_student":
-                token_info = penultimate_message.response_metadata['token_usage']
-            else:
-                token_info = final_state['messages'][-1].response_metadata['token_usage']
-        else:
-            token_info = final_state['messages'][-1].response_metadata['token_usage']
-        #print("token_info:")
-        #print(token_info)
-        #print("---")
+        token_info = final_state['messages'][-1].response_metadata['token_usage']
+        print("token_info:")
+        print(token_info)
+        print("---")
         prompt_tokens += token_info['prompt_tokens']
         completion_tokens += token_info['completion_tokens']
         total_tokens = prompt_tokens + completion_tokens
 
-        response = response.replace("\(","$").replace("\)","$").replace("\[","$$").replace("\]","$$")
+        response = response.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","")
         print("tutor answers:")
         print(response)
         print("---")
-        extra_info = {"rag_questions":rag_questions,"docs":docs,"tools_used":tools_used}
-        return response, total_tokens, prompt_tokens, completion_tokens, intent, assessment, extra_info
+        return response, total_tokens, prompt_tokens, completion_tokens, intent, assessment
     
-    def get_response_stream(self,messages_student,messages_tutor,max_tokens=1500):
-        #TODO implement it
-        raise NotImplementedError("Stream not yet implemented for graph tutor")
-        

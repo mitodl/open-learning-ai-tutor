@@ -3,15 +3,15 @@ from typing import Literal
 
 from langchain_anthropic import ChatAnthropic
 from langchain_together import ChatTogether
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
 from langchain_experimental.utilities import PythonREPL
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
-from open_learning_ai_tutor.utils import print_logs
-from open_learning_ai_tutor.Retriever import Retriever
+from utils import print_logs
+from Retriever import Retriever
 # not used anymore:
 #Moreover select if relevant some emotional states from "l,m":
 #l) The student shows a strong lack of motivation
@@ -57,7 +57,7 @@ i) The student is explicitly asking the tutor to perform a numerical calculation
 j) The student and tutor arrived at a complete solution for the entirety of the initial *Problem Statement*
 k) The student and tutor arrived at a complete solution for the entirety of the initial *Problem Statement* equivalent to the method provided in the *Provided Solution*
 l) The student's message is *entirely* irrelevant to the problem at hand or to the material covered by the exercise.
-m) The student is asking or continuing a conversation about additionnal information related to or that goes beyond the material covered by the problem.
+m) The student is asking about concepts or information related to the material covered by the problem, or is continuing such a discussion.
 
 Proceed step by step. First briefly justify your selection, then provide a string containing the selected letters.
 Answer in the following JSON format ONLY and do not output anything else:
@@ -91,9 +91,16 @@ Analyze the last student's utterance.
         return prompt
 
     def assess(self,pb,sol,student_messages,tutor_messages):
-        prompt = self.create_prompt(pb,sol,tutor_messages,student_messages)
-        #print("Assessor called with prompt:")
-        #print(print_logs(prompt))
+        # Order in chat history is tutor messages first, then student messages
+
+        # if no history, create prompt from scratch
+        if len(self.history) == 0:
+            prompt = self.create_prompt(pb,sol,tutor_messages,student_messages, from_history=False)
+        else:
+            # append the last tutor and student messages to the history
+            prompt_extension = self.create_prompt(pb,sol,tutor_messages,student_messages, from_history=True)
+            prompt = self.history + prompt_extension
+
         client = self.client
         completion = client.chat.completions.create(
             model=self.model,
@@ -121,20 +128,29 @@ Analyze the last student's utterance.
         total_tokens = completion.usage.total_tokens
         prompt_tokens = completion.usage.prompt_tokens
         completion_tokens = completion.usage.completion_tokens
-        
-        return assessment, prompt_tokens, completion_tokens
-    
 
-# THIS IS THE ONE WE ARE USING
-class GraphAssessor(Assessor):
-    def __init__(self,client,model,assessment_history=[],tools=None, version="V1") -> None:
+        # return the history
+        
+        return assessment, self.history
+    
+class GraphAssessor2(Assessor):
+    def __init__(self,model,assessment_history=[],new_messages=[], options = def_options) -> None:
         # init
-        self.version = version
+        
         self.model = model
         self.history = list(assessment_history)
+        self.new_messages = new_messages
+        
 
-        # tools
-        if tools is None:
+        if "version" in options:
+            self.version = options["version"]
+        else:
+            self.version = "V1"
+        if "tools" in options:
+            self.tools = options["tools"]
+        else:
+            self.tools = None
+        if self.tools is None:
             python_repl = PythonREPL()
             @tool
             def execute_python(query: str):
@@ -153,8 +169,6 @@ class GraphAssessor(Assessor):
                     return str(e)
 
             self.tools = [execute_python,calculator]
-        else:
-            self.tools = tools
         
         # model
 
@@ -175,7 +189,7 @@ class GraphAssessor(Assessor):
 
         
         # define the RAG agent
-        if version == "V2":
+        if self.version == "V2":
             self.rag_agent = Retriever("analytics_edge.txt")
         else:
             self.rag_agent = None
@@ -183,10 +197,10 @@ class GraphAssessor(Assessor):
 
         
         # Define the asessor's graph
-        def should_continue(state: MessagesState) -> Literal["tools", END]: # END imported from langgraph.graph
+        def should_continue(state: MessagesState) -> Literal["tools", END]:
             messages = state['messages']
             last_message = messages[-1]
-            print(last_message.content)
+            #print(last_message.content)
             # If the LLM makes a tool call, then we route to the "tools" node
             if last_message.tool_calls:
                 return "tools"
@@ -201,103 +215,146 @@ class GraphAssessor(Assessor):
             # We return a list, because this will get added to the existing list
             return {"messages": [response]}
         
+        # def call_rag(state: MessagesState):
+        #     if self.rag_agent is None:
+        #         return{"retrieved_docs": []}
+        #     messages = state['messages']
+        #     transcript = ""
+        #     for i in range(1,len(messages),2):
+        #         transcript += f"Tutor: \"{messages[i]}\"\nStudent: \"{messages[i+1]}\"\n"
+
+        #     response = self.rag_agent.invoke(transcript)
+            
+        #     return {"retrieved_docs": [response]}
+
+
         # Define a new graph
         workflow = StateGraph(MessagesState)
 
+        # Define the two nodes we will cycle between
+        # workflow.add_node("retriever", call_rag)
         workflow.add_node("agent", call_model)
         if tool_node is not None:
             workflow.add_node("tools", tool_node)
 
-        # Set the entrypoint as `agent`
+        # Set the entrypoint as `retriever`
         # This means that this node is the first one called
+        #workflow.add_edge(START, "retriever")
         workflow.add_edge(START, 'agent')
 
         # We now add a conditional edge
         if tool_node is not None:
             workflow.add_conditional_edges(
+                # First, we define the start node. We use `agent`.
+                # This means these are the edges taken after the `agent` node is called.
                 "agent",
-                # the function that will determine which node is called next.
+                # Next, we pass in the function that will determine which node is called next.
                 should_continue,
             )
         else:
             workflow.add_edge("agent", END)
 
-        # normal edge from `tools` to `agent`.
+        # We now add a normal edge from `tools` to `agent`.
         # This means that after `tools` is called, `agent` node is called next.
         workflow.add_edge("tools", 'agent')
 
         # Initialize memory to persist state between graph runs
         checkpointer = MemorySaver()
 
-        # compile agent
         app = workflow.compile(checkpointer=checkpointer)
         self.app = app
 
-
-    def get_transcript(self,tutor_messages,student_messages):
-        transcript = ""
-        for i in range(len(tutor_messages)):
-            transcript += f"Tutor: \"{tutor_messages[i]}\"\nStudent: \"{student_messages[i]}\"\n"
-        return transcript
+    def transcript_line(self,message):
+        if isinstance(message,HumanMessage):
+            return "Student: \""+message.content+"\""
+        elif isinstance(message,AIMessage):
+            if message.tool_calls and message.tool_calls[0]['name'] != "text_student":
+                return "Tutor (uses a tool)"
+            elif message.tool_calls and message.tool_calls[0]['name'] == "text_student":
+                return "Tutor (to student): \""+message.tool_calls[0]['args']['message_to_student']+"\""
+            elif message.content != "":
+                return "Tutor"
+            else:
+                return ""
+        elif isinstance(message,ToolMessage):
+            if message.name != "text_student":
+                return f"Tool ({message.name}) used. Result:" + message.content
+        elif isinstance(message,SystemMessage):
+            return "System"
+        return ""
     
-    def create_prompt(self,pb,sol,tutor_messages,student_messages):
+    def get_transcript2(self, new_messages, from_history = True):
+        transcript = ""
+        if from_history:
+            for message in self.history:
+                if isinstance(message,HumanMessage):
+                    transcript += message.content+"\n"
+        # add the new tutor and student messages
+        for message in new_messages:
+            if not (isinstance(message,ToolMessage) and message.name == "text_student"):
+                a = self.transcript_line(message)
+                print("THIS IS A:",a)
+                transcript += a
+        return transcript
+        
+    
+
+    def create_prompt2(self,pb,sol):
         docs = None
         rag_queries = None
+        # if RAG enabled
         if self.version == "V2":
-            transcript = self.get_transcript(tutor_messages,student_messages)
+            transcript = self.get_transcript2(self.new_messages,from_history=True)
             docs,rag_queries = self.rag_agent.invoke({"transcript":transcript, "pb":pb, "sol":sol})
             print("\n\nDOCS ARE:",docs)
             print("\n\nRAG QUESTIONS ARE:",rag_queries)
         self.docs = docs
         self.rag_queries = rag_queries
+
         purpose = self.get_purpose(pb,sol,docs)
+
+        if len(self.history) > 0:
+            prompt = self.history
+        else:
+            prompt = [SystemMessage(purpose)] 
         
-        prompt = [SystemMessage(purpose)] + \
-            [
-            msg for i in range(len(self.history))
-                for msg in (
-                    HumanMessage(f"Tutor: \"{tutor_messages[i]}\"\nStudent: \"{student_messages[i]}\"\n"),
-                    AIMessage(self.history[i])
-                )
-            ]
-        prompt.append(HumanMessage(f"Tutor: \"{tutor_messages[-1]}\"\nStudent: \"{student_messages[-1]}\"\n" ))
-        # print("\n\nAssessor prompt is:\n",prompt)
+        if not isinstance(prompt[0],SystemMessage):
+            prompt.insert(0,SystemMessage(purpose))
+        
+        prompt.append(HumanMessage(content=self.get_transcript2(self.new_messages,from_history=False)))
+        #print("\n\nAssessor prompt is:\n",prompt)
         return prompt
+    #######
     
+    def assess2(self,pb,sol):
+            prompt = self.create_prompt2(pb,sol)
+            print("\n\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
+            print("prompt is:\n")
+            print(prompt)
 
-    def assess(self,pb,sol,student_messages,tutor_messages):
-        prompt = self.create_prompt(pb,sol,tutor_messages,student_messages)
-        # print("Assessor called with prompt:")
-        # print(print_logs(prompt))
+            final_state = self.app.invoke(
+            {"messages": prompt},
+            config={"configurable": {"thread_id": 42}}
+            )
+            print("final state is:")
+            print(final_state)
 
-        final_state = self.app.invoke(
-        {"messages": prompt},
-        config={"configurable": {"thread_id": 42}}
-        )
+            response = final_state['messages'][-1].content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","")
+            # postprocess make sure the format is right
+            s = response.find('{')
+            e = response.rfind('}')
+            response = response[s:e+1]
+            print("response is:")
+            print(response)
+            json_data = json.loads(response)
+            selection = json_data['selection']
+            selection = selection.replace(' ','').replace(',','')
+            json_data['selection'] = selection
+            assessment = json.dumps(json_data)
 
-        response = final_state['messages'][-1].content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","")
-        print("ASSESSMENT IS \n",response)
-        # postprocess make sure the format is right
-        s = response.find('{')
-        e = response.rfind('}')
-        response = response[s:e+1]
-        json_data = json.loads(response)
-        selection = json_data['selection']
-        selection = selection.replace(' ','').replace(',','')
-        json_data['selection'] = selection
-        assessment = json.dumps(json_data)
+            self.history = final_state['messages']
+            final_state['messages'][-1].content = assessment
 
-        self.history.append(assessment)
-
-        token_info = final_state['messages'][-1].response_metadata['token_usage']
-
-        total_tokens = token_info['total_tokens']
-        prompt_tokens = token_info['prompt_tokens']
-        completion_tokens = token_info['completion_tokens']
-
-        #TODO log tokens from previous messages, log tool use etc etc
-        #TODO return computed equations.
         
-        return assessment, [prompt_tokens, completion_tokens,self.docs, self.rag_queries]
+            return self.history, {"docs":self.docs, "rag_queries":self.rag_queries}
     
-
