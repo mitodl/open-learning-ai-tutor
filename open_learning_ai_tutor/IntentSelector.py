@@ -1,4 +1,4 @@
-from taxonomy import Intent
+from open_learning_ai_tutor.taxonomy import Intent
 import json
 
 

@@ -10,8 +10,8 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
-from utils import print_logs
-from Retriever import Retriever
+from open_learning_ai_tutor.utils import print_logs
+from open_learning_ai_tutor.Retriever import Retriever
 # not used anymore:
 #Moreover select if relevant some emotional states from "l,m":
 #l) The student shows a strong lack of motivation
@@ -69,7 +69,8 @@ Answer in the following JSON format ONLY and do not output anything else:
 }}
 ##
 Analyze the last student's utterance.
-{{"""
+{{
+"""
         return purpose
 
     def create_prompt(self,pb,sol,tutor_messages,student_messages):
@@ -134,7 +135,7 @@ Analyze the last student's utterance.
         return assessment, self.history
     
 class GraphAssessor2(Assessor):
-    def __init__(self,model,assessment_history=[],new_messages=[], options = def_options) -> None:
+    def __init__(self,model, client=None, assessment_history=[],new_messages=[], options = {}) -> None:
         # init
         
         self.model = model
@@ -171,15 +172,15 @@ class GraphAssessor2(Assessor):
             self.tools = [execute_python,calculator]
         
         # model
-
-        if "gpt" in model:
-            client = ChatOpenAI(model=model, temperature=0.0, top_p=0.1, max_tokens=300) #response_format = { "type": "json_object" }
-        elif "claude" in model:
-            client = ChatAnthropic(model=model, temperature=0.0, top_p=0.1, max_tokens=300)
-        elif "llama" in model or "Llama" in model:
-            client = ChatTogether(model=model, temperature=0.0, top_p=0.1, max_tokens=300)
-        else:
-            raise ValueError("Model not supported")
+        if not client:
+            if "gpt" in model:
+                client = ChatOpenAI(model=model, temperature=0.0, top_p=0.1, max_tokens=300) #response_format = { "type": "json_object" }
+            elif "claude" in model:
+                client = ChatAnthropic(model=model, temperature=0.0, top_p=0.1, max_tokens=300)
+            elif "llama" in model or "Llama" in model:
+                client = ChatTogether(model=model, temperature=0.0, top_p=0.1, max_tokens=300)
+            else:
+                raise ValueError("Model not supported")
 
         tool_node = None  
         if self.tools != None and self.tools != []:
@@ -211,7 +212,10 @@ class GraphAssessor2(Assessor):
         # Define the function that calls the model
         def call_model(state: MessagesState):
             messages = state['messages']
-            response = self.client.invoke(messages)
+            response = self.client.invoke(
+                messages,
+                config={"configurable": {"thread_id": 42}}
+            )
             # We return a list, because this will get added to the existing list
             return {"messages": [response]}
         

@@ -48,7 +48,12 @@ def display_messages(messages, allow_feedback=True):
                 response = st.write(msg.content)
     return turn
 
-
+def correct_figure_query(query):
+    query = query.replace('plt.show()', 'st.pyplot(plt.gcf())')
+    query = re.sub(r'(\w+)\.show\(\)', r'st.pyplot(\1)', query)
+    query = query.strip("`")
+    # query += ''
+    return query
 
 #########################################################################
 
@@ -74,9 +79,7 @@ import time
 import re
 
 import streamlit as st
-import Student
 import tiktoken
-import Tutor
 from e2b_code_interpreter import Sandbox
 #from get_key import get_client_openAI
 from github import Auth, Github
@@ -86,127 +89,26 @@ from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain_together import ChatTogether
 from matplotlib import pyplot as plt
-from problems import get_pb_sol
-from taxonomy import Intent
-
-from StratL import convert_StratL_input_to_json, process_StratL_json_output, message_tutor, serialize_A_B_test_responses
-from utils import json_to_messages, json_to_intent_list, messages_to_json, intent_list_to_json
+from open_learning_ai_tutor.problems import get_pb_sol
+from open_learning_ai_tutor.taxonomy import Intent
+from open_learning_ai_tutor.tools import tutor_tools
+from open_learning_ai_tutor.StratL import convert_StratL_input_to_json, process_StratL_json_output, message_tutor, serialize_A_B_test_responses
+from open_learning_ai_tutor.utils import json_to_messages, json_to_intent_list, messages_to_json, intent_list_to_json
 
 import numpy as np
 
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 
 
-openai_key = "key"
-anthropic_api_key = "key"
-os.environ["ANTHROPIC_API_KEY"] = anthropic_api_key
-os.environ["OPENAI_API_KEY"] = openai_key   
-os.environ["E2B_API_KEY"]="key"
-os.environ["TOGETHER_API_KEY"] = "key"
+os.environ["ANTHROPIC_API_KEY"] = st.secrets["ANTHROPIC_API_KEY"] if "ANTHROPIC_API_KEY" in st.secrets else ""
+os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else ""
+os.environ["E2B_API_KEY"]=  st.secrets["E2B_API_KEY"] if "E2B_API_KEY" in st.secrets else ""
+os.environ["TOGETHER_API_KEY"] = st.secrets["TOGETHER_API_KEY"] if "TOGETHER_API_KEY" in st.secrets else ""
 
-gtb_token = "key"
-auth = Auth.Token(gtb_token)
-g = Github(auth=auth)
-repo = g.get_user().get_repo('Universal_AI') # repo name
-# tool creation
-@tool
-def text_student(message_to_student: str):
-    """A tool to send a message to your student. This tool is the only way for you to communicate with your student. The input should be your message. After the message is sent, you will wait for the student's next message."""
-    return "Message sent"
-
-@tool
-def display_figure(query):
-    """A tool to show figures to students. Input `query` is a matplotlib program displaying a figure.
-Example input for `query`:
-```
-fig, ax = plt.subplots()  # Always create figure and axis objects
-x = np.linspace(-5, 5, 100)
-y = x**2 
-ax.plot(x, y)
-ax.grid(True)
-ax.set_title('Sample Parabola')
-ax.set_xlabel('x')
-ax.set_ylabel('y')
-fig.show()
-```"""
-    if 'show' in query:
-        return "Figure displayed"
-    else:
-        return "Error in `query` for `display_figure`: you must show your figure using `.show()`"
-    
-def correct_figure_query(query):
-    query = query.replace('plt.show()', 'st.pyplot(plt.gcf())')
-    query = re.sub(r'(\w+)\.show\(\)', r'st.pyplot(\1)', query)
-    query = query.strip("`")
-    # query += ''
-    return query
-                
-python_repl = PythonREPL()
-@tool
-def execute_python(program: str):
-    """A Python shell. Use SymPy to solve complex equations. Use this to execute python commands. Input should be a valid python program. You must print the result using `print(...)`.
-    Example input:```
-import sympy as sp
-
-# Define the symbol for the variable
-x = sp.Symbol('x')
-
-# Define the equation
-equation = sp.Eq(x**2 + 2*x + 1, 0)
-
-# Solve the equation
-solutions = sp.solve(equation, x)
-
-# Display the solutions
-print("Solutions:", solutions)```"""
-    try:
-        if 'print' not in program:
-            return "No output printed: you forgot to print the result using `print(...)`"
-        res = python_repl.run(program.strip('`'))
-        if res is None or res == "":
-            return "No output printed: you forgot to print the result using `print(...)`"
-        return res
-    except Exception as e:
-        return str(e)
-    
-@tool
-def python_calculator(program: str):
-    """A calculator. Use it to perform all complex computations at once. Input should be a valid python program with printed results. You must print the results using `print(...)`.
-    example program input:
-    ```
-    result1 = 232+33/12
-    print("result1 = ", result1)
-
-    result2 = 167**0.5
-    print("result2 = ", result2)
-    ```"""
-    try:
-        if 'print' not in program:
-            if '\n' not in program:
-                program = f"print({program})"
-            else:
-                return "No output printed: you forgot to print the result using `print(...)`"
-        res = python_repl.run(program.strip('`'))	
-        if res is None or res == "":
-            return "No output printed: you forgot to print the result using `print(...)`"
-        return res
-    except Exception as e:
-        return str(e)
-    
-
-# sbx = Sandbox()
-# if we need to import a custom dataset.
-# with open("/local/file", "rb") as file:
-#    # Upload file to the sandbox to path '/home/user/my-file'
-# 	sbx.files.write("/home/user/my-file", file)
-
-# @tool
-# def R_code_interpreter(code:str):
-#     """A R code interpreter. Use this tool to execute R code. Input should be a valid R command. If you want to see the output of a value, you should print it out with `print(...)`"""
-#     return sbx.run_code(code, language = 'r' )
-
-tools = [text_student,display_figure,python_calculator,execute_python]#,R_code_interpreter]
-##
+if "GITHUB_TOKEN" in st.secrets:
+    auth = Auth.Token(st.secrets["GITHUB_TOKEN"])
+    g = Github(auth=auth)
+    repo = g.get_user().get_repo('Universal_AI') # repo name
 
 ##### Github #####
 def commit(g,repo,content):
@@ -289,7 +191,7 @@ else:
 version = random.choice(["V1"])#,"V2"]) #V1 no RAG, V2 RAG
 
 ### global vars
-topic = "HW1P1E1"
+topic = "A1P1"
 pb,sol = get_pb_sol(topic)
 if 'topic' not in st.session_state:
     st.session_state['topic'] = topic
@@ -319,7 +221,7 @@ if 'username' not in st.session_state:
 if "tutor_answered" not in st.session_state:
     st.session_state["tutor_answered"] = True
 if "options" not in st.session_state:
-    st.session_state["options"] = {}
+    st.session_state["options"] = {'A_B_test': True}
 
 # new functional approach
 if 'chat_history' not in st.session_state:
@@ -492,7 +394,7 @@ if True:
     exercise_name_placeholder = st.sidebar.empty()
     exercise_name_placeholder.write(f"Exercice: {st.session_state['topic']}")
     
-    used_probl = st.sidebar.selectbox("Available problems:",["HW1P1E1","HW1P1E2","HW1P1E3"], key='selection_prev_ex') #test
+    used_probl = st.sidebar.selectbox("Available problems:",["A1P1","A1P2","A1P3"], key='selection_prev_ex') #test
     
     change_exercise_button = st.sidebar.button("Change exercise", key="change")
 
@@ -611,7 +513,7 @@ if True:
             st.session_state['chat_history'].extend([HumanMessage(content=student_utterance)])
             
             # Get tutor response
-            json_output = message_tutor(*convert_StratL_input_to_json(st.session_state['pb'], st.session_state['sol'], client, st.session_state['new_messages'], st.session_state['chat_history'], st.session_state['assessment_history'], st.session_state['intent_history'], st.session_state['options']),tools = tools, A_B_test = True)
+            json_output = message_tutor(*convert_StratL_input_to_json(st.session_state['pb'], st.session_state['sol'], client, st.session_state['new_messages'], st.session_state['chat_history'], st.session_state['assessment_history'], st.session_state['intent_history']), st.session_state['options'], tools = tutor_tools)
             time_taken = time.time() - time_of_question
             st.session_state['execution_time'].append(time_taken)
             new_chat_history,new_intent_history,new_assessment_history,metadata = process_StratL_json_output(json_output)

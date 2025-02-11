@@ -1,29 +1,24 @@
 # By Romain Puech, Jan 2025
 import os
 import json
-import Tutor 
-import Assessor
-import IntentSelector
-import PromptGenerator
-import Intermediary
-from taxonomy import Intent
-from utils import json_to_messages, json_to_intent_list, messages_to_json, intent_list_to_json
+import open_learning_ai_tutor.Tutor  as Tutor
+import open_learning_ai_tutor.Assessor as Assessor
+import open_learning_ai_tutor.IntentSelector as IntentSelector
+import open_learning_ai_tutor.PromptGenerator as PromptGenerator
+import open_learning_ai_tutor.Intermediary as Intermediary
+from open_learning_ai_tutor.utils import json_to_messages, json_to_intent_list, messages_to_json, intent_list_to_json
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 import concurrent.futures
 
-openai_key = "key"
-os.environ["OPENAI_API_KEY"] = openai_key
-
 ## functions called internally by StratL to interract with exernal app
-def StratL_json_input_to_python(problem: str, solution: str, client, new_messages: str, chat_history: str, assessment_history: str, intent_history: str, options: str, tools: list = []):
+def StratL_json_input_to_python(problem: str, solution: str, client, new_messages: str, chat_history: str, assessment_history: str, intent_history: str, tools: list = []):
     chat_history = json_to_messages(chat_history)
     assessment_history = json_to_messages(assessment_history)
     intent_history = json_to_intent_list(intent_history)
     new_messages = json_to_messages(new_messages)
-    options = json.loads(options)
-    return problem, solution, client, new_messages, chat_history, assessment_history, intent_history, options, tools
+    return problem, solution, client, new_messages, chat_history, assessment_history, intent_history,  tools
 
 def StratL_python_output_to_json(new_chat_history,new_intent_history,new_assessment_history,metadata):
     json_output = {"chat_history": messages_to_json(new_chat_history), "intent_history": intent_list_to_json(new_intent_history), "assessment_history": messages_to_json(new_assessment_history), "metadata": metadata}
@@ -42,13 +37,12 @@ def process_StratL_json_output(json_output):
     metadata = json_output["metadata"]
     return chat_history, intent_history, assessment_history, metadata
 
-def convert_StratL_input_to_json(problem: str, solution: str, client, new_messages: list, chat_history: list, assessment_history: list, intent_history: list, options: dict):
+def convert_StratL_input_to_json(problem: str, solution: str, client, new_messages: list, chat_history: list, assessment_history: list, intent_history: list):
     json_new_messages = messages_to_json(new_messages)
     json_chat_history = messages_to_json(chat_history)
     json_assessment_history = messages_to_json(assessment_history)
     json_intent_history = intent_list_to_json(intent_history)
-    json_options = json.dumps(options)
-    return problem, solution, client, json_new_messages, json_chat_history, json_assessment_history, json_intent_history, json_options
+    return problem, solution, client, json_new_messages, json_chat_history, json_assessment_history, json_intent_history
 
 def serialize_A_B_test_response(dico):
     if dico is None:
@@ -71,7 +65,25 @@ def serialize_A_B_test_responses(list_of_dicts):
     return [serialize_A_B_test_response(list_of_dicts[i]) for i in range(len(list_of_dicts))] # usually 2 if A/B test
 
 ## Actual StratL interface
-def message_tutor(problem: str, solution: str, client, new_messages: str, chat_history: str, assessment_history: str, intent_history: str, options: str, tools: list = [], A_B_test: bool = False):
+def message_tutor(problem: str, solution: str, client, new_messages: str, chat_history: str, assessment_history: str, intent_history: str, options: dict, tools: list = []):
+    """
+    Obtain the next response from the tutor given a message and the current state of the conversation.
+
+    Args:
+        problem (str): The problem text
+        solution (str): The solution text
+        client: A langchain client
+        new_messages (json): json of new messages
+        chat_history (json): json of chat history
+        assessment_history (json): json of assessment history
+        intent_history (json): json of intent history
+        options (dict): options for the tutor. The following options are supported:
+            "assessor_client": the client for the assessor. 
+            "A_B_test":  to run the tutor in A/B test mode
+        tools (list of tools): list of tools for the tutor
+
+    """
+    A_B_test = options.get("A_B_test", False)
     if not A_B_test:
         new_history, new_intent_history, new_assessment_history, metadata =  _single_message_tutor(problem, solution, client, new_messages, chat_history, assessment_history, intent_history, options, tools)
         metadata["A_B_test"] = False
@@ -137,12 +149,12 @@ def message_tutor(problem: str, solution: str, client, new_messages: str, chat_h
             # Combine both results into a list
             return json_output_1
 
-def _single_message_tutor(problem: str, solution: str, client, new_messages: str, chat_history: str, assessment_history: str, intent_history: str, options: str, tools: list = []):
+def _single_message_tutor(problem: str, solution: str, client, new_messages: str, chat_history: str, assessment_history: str, intent_history: str, options: dict, tools: list = []):
     """Internal function that contains the original message_tutor logic"""
-    problem, solution, client, new_messages, chat_history, assessment_history, intent_history, options, tools = StratL_json_input_to_python(problem, solution, client, new_messages, chat_history, assessment_history, intent_history, options, tools)
+    problem, solution, client, new_messages, chat_history, assessment_history, intent_history, tools = StratL_json_input_to_python(problem, solution, client, new_messages, chat_history, assessment_history, intent_history, tools)
     model = client.model_name
-    
-    assessor = Assessor.GraphAssessor2(model, assessment_history=assessment_history, new_messages=new_messages, options = options)
+    assessor_client = options.get("assessor_client", None)
+    assessor = Assessor.GraphAssessor2(model, client=assessor_client, assessment_history=assessment_history, new_messages=new_messages, options = options)
     intentSelector = IntentSelector.SimpleIntentSelector2(intent_history)
     promptGenerator = PromptGenerator.SimplePromptGenerator2(chat_history = chat_history, options = options)
     intermediary = Intermediary.GraphIntermediary2(model, assessor = assessor, intentSelector = intentSelector, promptGenerator = promptGenerator)

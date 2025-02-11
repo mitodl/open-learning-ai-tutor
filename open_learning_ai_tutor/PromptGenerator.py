@@ -1,7 +1,7 @@
-import utils
+import open_learning_ai_tutor.utils as utils
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 #from problems import create_msgs
-from taxonomy import Intent
+from open_learning_ai_tutor.taxonomy import Intent
 
 # Old version. We used SimplePromptGenerator2 instead.
 class PromptGenerator():

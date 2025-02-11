@@ -1,5 +1,5 @@
 import json
-from taxonomy import Intent
+from open_learning_ai_tutor.taxonomy import Intent
 
 def json_to_intent_list(json_str):
     """Convert a JSON string to a list of Intent enums."""

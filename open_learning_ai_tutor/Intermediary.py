@@ -1,7 +1,6 @@
-import PromptGenerator
-import IntentSelector
-import Assessor
-from taxonomy import Intent
+import open_learning_ai_tutor.PromptGenerator as PromptGenerator
+import open_learning_ai_tutor.IntentSelector as IntentSelector
+import open_learning_ai_tutor.Assessor as Assessor
 
 def_options = {"version":"V1","tools":None}
 
