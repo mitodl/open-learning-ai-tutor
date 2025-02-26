@@ -1,6 +1,6 @@
 [project]
 name = "open_learning_ai_tutor"
-version = "0.0.0"
+version = "0.0.1"
 description = "AI powered tutor"
 authors = [
     { name = "MIT Open Learning Engineering", email = "odl-devops@mit.edu" }
