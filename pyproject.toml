@@ -1,6 +1,6 @@
 [project]
 name = "open_learning_ai_tutor"
-version = "0.0.1"
+version = "0.0.2"
 description = "AI powered tutor"
 authors = [
     { name = "MIT Open Learning Engineering", email = "odl-devops@mit.edu" }
@@ -16,6 +16,7 @@ dependencies=[
 "langchain_anthropic",
 "langchain-together",
 "langchain_core",
+"langchain_chroma==0.2.2",
 "langchain_experimental",
 "e2b-code-interpreter",
 ]
