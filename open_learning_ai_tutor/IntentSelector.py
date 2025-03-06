@@ -8,11 +8,9 @@ class IntentSelector():
         self.previous_intent = intent_history[-1] if intent_history != [] else [Intent.S_STRATEGY]
 
     def get_intent(self,assessment,open=True):
-        #print("selecting intent... ")
         previous_intent = self.previous_intent
         assessment_codes = self.extract_assessment_codes(assessment)
         intents = self.get_intent_aux(previous_intent,assessment_codes)
-        #print(f"selected intent: {intents}")
         return intents
     
     def extract_assessment_codes(self,assessment):
@@ -24,7 +22,6 @@ class IntentSelector():
     def get_intent_aux(self,previous_intent,assessment_codes,open_problem=True):
         if not open_problem and 'j' in assessment_codes: # if the problem is not open, then it has only one solution
             assessment_codes.append('k')
-        # print(f"codes are {assessment_codes} and previous intent is {previous_intent}")
         intents = []
         # non previous intent-dependent selections:
         if Intent.G_GREETINGS in previous_intent:
@@ -47,7 +44,6 @@ class IntentSelector():
             intents.append(Intent.P_LIMITS)
         
             
-
         # previous intent-dependent selections:
         
         if Intent.S_SELFCORRECTION in previous_intent:
@@ -149,6 +145,5 @@ class SimpleIntentSelector2(IntentSelector):
         # remove duplicates
         intents = list(set(intents))
         self.previous_intent = intents
-        # print(f"selected intent: {intents}")
         return intents
 

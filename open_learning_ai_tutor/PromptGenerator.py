@@ -1,6 +1,5 @@
 import open_learning_ai_tutor.utils as utils
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
-#from problems import create_msgs
+from langchain_core.messages import  SystemMessage
 from open_learning_ai_tutor.taxonomy import Intent
 
 # Old version. We used SimplePromptGenerator2 instead.
@@ -9,7 +8,6 @@ class PromptGenerator():
         self.version = version
 
     def get_prompt(self,pb,sol,student_messages,tutor_messages,intents):
-        #print("Prompt generator called")
         system_msg  = \
 f"""Act as an experienced tutor. Characteristics of a good tutor include:
     • Promote a sense of challenge, curiosity, feeling of control
@@ -78,10 +76,8 @@ Provide the least amount of scaffolding possible to help the student solve the p
             intent_prompt += ""
 
         if intent_prompt!="":
-            #intent_prompt = "Your intent is to:\n" + intent_prompt
             messages.append({"role": "system", "content": intent_prompt})
-        #print("intent prompt:")
-        #print(intent_prompt)
+
         return messages
 
     
@@ -98,7 +94,6 @@ class SimplePromptGenerator2(PromptGenerator):
     def get_prompt2(self,pb,sol,intents,options = dict()):
         if "docs" in options:
             retrieved_text = options["docs"]
-            if retrieved_text: print(retrieved_text)
         # re-create the system message each time because it depends on the retrieved docuemnts
         system_msg  = \
         f"""Act as an experienced tutor. You are comunicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:
@@ -189,7 +184,5 @@ Provide the least amount of scaffolding possible to help the student solve the p
             intent_prompt = "The student is asking something irrelevant to the problem. Explain politely that you can't help them on topics other than the problem. DO NOT ANSWER THEIR REQUEST\n"
         intent_prompt += " Your student can only see the text you send them using your `text_student` tool, the rest of your thinking is hidden to them."
         self.chat_history.append(SystemMessage(content=intent_prompt))
-        #print("intent prompt:")
-        #print(intent_prompt)
         return self.chat_history
     
