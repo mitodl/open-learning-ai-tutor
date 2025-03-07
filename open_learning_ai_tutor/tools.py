@@ -80,4 +80,4 @@ def python_calculator(program: str):
         return str(e)
     
 
-tutor_tools = [text_student,display_figure,python_calculator,execute_python]
+tutor_tools = [text_student, display_figure, python_calculator, execute_python]

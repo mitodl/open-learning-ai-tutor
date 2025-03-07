@@ -4,18 +4,11 @@ from typing import Literal
 from langchain_anthropic import ChatAnthropic
 from langchain_together import ChatTogether
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
-from langchain_core.tools import tool
-from langchain_experimental.utilities import PythonREPL
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
-from open_learning_ai_tutor.utils import print_logs
-from open_learning_ai_tutor.Retriever import Retriever
-# not used anymore:
-#Moreover select if relevant some emotional states from "l,m":
-#l) The student shows a strong lack of motivation
-#m) The student shows a strong lack of self-confidence
+from open_learning_ai_tutor.tools import execute_python, python_calculator
 
 class Assessor():
     def __init__(self,client,model,assessment_history=[]) -> None:
@@ -76,10 +69,6 @@ Analyze the last student's utterance.
     def create_prompt(self,pb,sol,tutor_messages,student_messages):
         
         purpose = self.get_purpose(pb,sol)
-        #print("DEBUG")
-        #print(tutor_messages)
-        #print(student_messages)
-        #print(self.history)
         prompt = [{"role": "system", "content": purpose}] + \
             [
             msg for i in range(len(self.history))
@@ -113,7 +102,6 @@ Analyze the last student's utterance.
         )
 
         response = (completion.choices[0].message.content).replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","")
-        print("ASSESSMENT IS \n",response)
         # postprocess make sure the format is right
         s = response.find('{')
         e = response.rfind('}')
@@ -135,9 +123,7 @@ Analyze the last student's utterance.
         return assessment, self.history
     
 class GraphAssessor2(Assessor):
-    def __init__(self,model, client=None, assessment_history=[],new_messages=[], options = {}) -> None:
-        # init
-        
+    def __init__(self,model, client=None, assessment_history=[],new_messages=[], options = {}) -> None:      
         self.model = model
         self.history = list(assessment_history)
         self.new_messages = new_messages
@@ -150,26 +136,8 @@ class GraphAssessor2(Assessor):
         if "tools" in options:
             self.tools = options["tools"]
         else:
-            self.tools = None
-        if self.tools is None:
-            python_repl = PythonREPL()
-            @tool
-            def execute_python(query: str):
-                """A Python shell. Use SymPy to solve complex equations. Use this to execute python commands. Input should be a valid python command. If you want to see the output of a value, you should print it out with `print(...)`."""
-                try:
-                    return python_repl.run(query)
-                except Exception as e:
-                    return str(e)
-                
-            @tool
-            def calculator(query: str):
-                """A Python Shell. Use it to perform complex computations. Input should be a valid python command. To see the output of a value, print it out with `print(...)`."""
-                try:
-                    return python_repl.run(query)
-                except Exception as e:
-                    return str(e)
+            self.tools = [execute_python, python_calculator]
 
-            self.tools = [execute_python,calculator]
         
         # model
         if not client:
@@ -189,19 +157,13 @@ class GraphAssessor2(Assessor):
         self.client = client
 
         
-        # define the RAG agent
-        if self.version == "V2":
-            self.rag_agent = Retriever("analytics_edge.txt")
-        else:
-            self.rag_agent = None
+        self.rag_agent = None
         self.rag_queries = None
 
-        
         # Define the asessor's graph
         def should_continue(state: MessagesState) -> Literal["tools", END]:
             messages = state['messages']
             last_message = messages[-1]
-            #print(last_message.content)
             # If the LLM makes a tool call, then we route to the "tools" node
             if last_message.tool_calls:
                 return "tools"
@@ -218,32 +180,17 @@ class GraphAssessor2(Assessor):
             )
             # We return a list, because this will get added to the existing list
             return {"messages": [response]}
-        
-        # def call_rag(state: MessagesState):
-        #     if self.rag_agent is None:
-        #         return{"retrieved_docs": []}
-        #     messages = state['messages']
-        #     transcript = ""
-        #     for i in range(1,len(messages),2):
-        #         transcript += f"Tutor: \"{messages[i]}\"\nStudent: \"{messages[i+1]}\"\n"
-
-        #     response = self.rag_agent.invoke(transcript)
-            
-        #     return {"retrieved_docs": [response]}
-
 
         # Define a new graph
         workflow = StateGraph(MessagesState)
 
         # Define the two nodes we will cycle between
-        # workflow.add_node("retriever", call_rag)
         workflow.add_node("agent", call_model)
         if tool_node is not None:
             workflow.add_node("tools", tool_node)
 
         # Set the entrypoint as `retriever`
         # This means that this node is the first one called
-        #workflow.add_edge(START, "retriever")
         workflow.add_edge(START, 'agent')
 
         # We now add a conditional edge
@@ -297,7 +244,6 @@ class GraphAssessor2(Assessor):
         for message in new_messages:
             if not (isinstance(message,ToolMessage) and message.name == "text_student"):
                 a = self.transcript_line(message)
-                print("THIS IS A:",a)
                 transcript += a
         return transcript
         
@@ -310,8 +256,7 @@ class GraphAssessor2(Assessor):
         if self.version == "V2":
             transcript = self.get_transcript2(self.new_messages,from_history=True)
             docs,rag_queries = self.rag_agent.invoke({"transcript":transcript, "pb":pb, "sol":sol})
-            print("\n\nDOCS ARE:",docs)
-            print("\n\nRAG QUESTIONS ARE:",rag_queries)
+
         self.docs = docs
         self.rag_queries = rag_queries
 
@@ -326,30 +271,21 @@ class GraphAssessor2(Assessor):
             prompt.insert(0,SystemMessage(purpose))
         
         prompt.append(HumanMessage(content=self.get_transcript2(self.new_messages,from_history=False)))
-        #print("\n\nAssessor prompt is:\n",prompt)
         return prompt
-    #######
     
     def assess2(self,pb,sol):
             prompt = self.create_prompt2(pb,sol)
-            print("\n\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
-            print("prompt is:\n")
-            print(prompt)
 
             final_state = self.app.invoke(
             {"messages": prompt},
             config={"configurable": {"thread_id": 42}}
             )
-            print("final state is:")
-            print(final_state)
 
             response = final_state['messages'][-1].content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","")
             # postprocess make sure the format is right
             s = response.find('{')
             e = response.rfind('}')
             response = response[s:e+1]
-            print("response is:")
-            print(response)
             json_data = json.loads(response)
             selection = json_data['selection']
             selection = selection.replace(' ','').replace(',','')

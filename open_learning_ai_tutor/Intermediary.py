@@ -26,7 +26,6 @@ class Intermediary():
         self.promptGenerator.model = model
 
     def get_prompt(self,pb,sol,student_messages,tutor_messages,open=True):
-        #print("generating tutor's prompt...")
         assessment,metadata = self.assessor.assess(pb,sol,student_messages,tutor_messages)
         assessor_prompt_tokens,assessor_completion_tokens = metadata[0], metadata[1]
         docs = None
@@ -48,7 +47,6 @@ class GraphIntermediary2(Intermediary):
         self.promptGenerator = PromptGenerator.SimplePromptGenerator2(options = options, chat_history = chat_history) if promptGenerator is None else promptGenerator
 
     def get_prompt2(self,pb,sol):
-        #print("generating tutor's prompt...")
         assessment_history,metadata = self.assessor.assess2(pb,sol)
         assessment = assessment_history[-1].content
         

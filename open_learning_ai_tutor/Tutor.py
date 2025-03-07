@@ -4,9 +4,6 @@ import open_learning_ai_tutor.Intermediary as Intermediary
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain_together import ChatTogether
-from langchain_core.messages import AIMessage
-from langchain_core.tools import tool
-from langchain_experimental.utilities import PythonREPL
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
@@ -15,9 +12,6 @@ from langgraph.prebuilt import ToolNode
 class Tutor():
 
     def __init__(self,client,pb,sol,model="gpt-4o-2024-05-13",intermediary=None,intent_history = [],assessment_history=[],is_open=True, version="V1") -> None:
-        print("---")
-        print("Creating tutor...")
-        print("---")
         self.client = client
         self.model = model#"myGPT4"#model
         self.pb,self.sol = pb,sol
@@ -42,14 +36,8 @@ class Tutor():
         
 
     def get_response(self,messages_student,messages_tutor,max_tokens=1500):
-        print("\n---")
-        #print("tutor called using model ", self.model)
         prompt,intent,assessment,prompt_tokens,completion_tokens = self.intermediary.get_prompt(self.pb,self.sol,messages_student,messages_tutor,open=self.open)
-        #prompt.append({"role": "system", "content": "Ask the student to find by themself a problem with their answer without giving any hint"})
-        print("prompt generated:")
-        #print_logs(prompt)
         
-
         completion = self.client.chat.completions.create(
             model=self.model,
             messages=prompt,
@@ -62,31 +50,7 @@ class Tutor():
         total_tokens = prompt_tokens + completion_tokens
 
         response = response.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","")
-        # print("tutor answers:")
-        # print(response)
-        # print("---")
         return response, total_tokens, prompt_tokens, completion_tokens, intent, assessment
-    
-    def get_response_stream(self,messages_student,messages_tutor,max_tokens=1500):
-        print("\n---")
-        #print("tutor called using model ", self.model)
-        prompt,intent,assessment,prompt_tokens,completion_tokens = self.intermediary.get_prompt(self.pb,self.sol,messages_student,messages_tutor,open=self.open)
-        #prompt.append({"role": "system", "content": "Ask the student to find by themself a problem with their answer without giving any hint"})
-        print("prompt generated:")
-        #print_logs(prompt)
-
-        stream = self.client.chat.completions.create(
-            model=self.model,
-            messages=prompt,
-            max_tokens=max_tokens,
-            stream=True,
-        )
-        #response = response.replace("\(","$").replace("\)","$").replace("\[","$$").replace("\]","$$")
-        #print("tutor answers:")
-        #print(response)
-        #print("---")
-        total_tokens = prompt_tokens + completion_tokens
-        return stream, total_tokens, prompt_tokens, completion_tokens, intent, assessment
  
 class GraphTutor2(Tutor):
 
@@ -117,7 +81,6 @@ class GraphTutor2(Tutor):
         
         # tools 
         if tools is None or tools == []:
-            print("No tools provided!")
             self.tools = []
         else:
             self.tools = tools
@@ -151,7 +114,6 @@ class GraphTutor2(Tutor):
             last_message = messages[-1]
             # If the LLM makes a tool call, then we route to the "tools" node
             if last_message.tool_calls:
-                #print("TOOL USED")
                 self.tools_used.append([last_message.tool_calls[-1]['name'],last_message.tool_calls[-1]['args']])
                 return "tools"
             # Otherwise, we stop (reply to the user)
@@ -166,7 +128,6 @@ class GraphTutor2(Tutor):
             if penultimate_message.tool_calls:
                 if penultimate_message.tool_calls[-1]['name'] == "text_student":
                     self.final_response = penultimate_message.tool_calls[-1]['args']['message_to_student']
-                    # print("\033[31mSEND MSG USED\033[0m")
                     return END
             return "agent"
 
@@ -216,8 +177,7 @@ class GraphTutor2(Tutor):
         self.app = app
 
         
-
-    def get_response2(self,max_tokens=1500):
+    def get_response2(self):
         
         prompt,intent,assessment,metadata = self.intermediary.get_prompt2(self.pb,self.sol)
 
@@ -228,60 +188,11 @@ class GraphTutor2(Tutor):
 
         return final_state, intent, assessment, metadata
     
-    def get_response2_given_prompt(self,prompt,max_tokens=1500):
-        print("\n\n----------------GET RESPONSE 2 GIVEN PROMPT----------------\n\n")
-        for msg in prompt:
-            print(msg)
-            print(type(msg))
-            print("\n\n")
-        print("\n\n----------------GET RESPONSE 2 GIVEN PROMPT----------------\n\n")
+    def get_response2_given_prompt(self,prompt):
         final_state = self.app.invoke(
             {"messages": prompt},
             config={"configurable": {"thread_id": 42}}
         )
 
         return final_state
-    
-    def get_response_stream(self,messages_student,messages_tutor,max_tokens=1500):
-        #TODO get_responses (plural)
-        raise NotImplementedError("Stream not implemented for graph tutor")
-        print("\n---")
-        #print("tutor called using model ", self.model)
-        prompt,intent,assessment,prompt_tokens,completion_tokens = self.intermediary.get_prompt(self.pb,self.sol,messages_student,messages_tutor,open=self.open)
-        #prompt.append({"role": "system", "content": "Ask the student to find by themself a problem with their answer without giving any hint"})
-        print("prompt generated:")
-        #print_logs(prompt)
-        
-        
-        # completion = self.client.chat.completions.create(
-        #     model=self.model,
-        #     messages=prompt,
-        #     max_tokens=max_tokens
-        # )
-        final_state = self.app.invoke(
-            {"messages": prompt},
-            config={"configurable": {"thread_id": 42}}
-        )
-        response = ''
-        #print("final_state:\n\n",final_state['messages'])
-        for message in final_state['messages']:
-            if type(message) != type(AIMessage('')):
-                response = ''
-            elif message.content != '':
-                response += message.content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","") + "\n"
-        #response = final_state['messages'][-1].content
-        
-        token_info = final_state['messages'][-1].response_metadata['token_usage']
-        print("token_info:")
-        print(token_info)
-        print("---")
-        prompt_tokens += token_info['prompt_tokens']
-        completion_tokens += token_info['completion_tokens']
-        total_tokens = prompt_tokens + completion_tokens
-
-        response = response.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","")
-        print("tutor answers:")
-        print(response)
-        print("---")
-        return response, total_tokens, prompt_tokens, completion_tokens, intent, assessment
     

@@ -16,7 +16,7 @@ dependencies=[
 "langchain_anthropic",
 "langchain-together",
 "langchain_core",
-"langchain_chroma==0.2.2",
+"langchain_chroma",
 "langchain_experimental",
 "e2b-code-interpreter",
 ]
