@@ -1,6 +1,6 @@
 import json
 import open_learning_ai_tutor.Tutor  as Tutor
-import open_learning_ai_tutor.Assessor as Assessor
+import open_learning_ai_tutor.assessor as Assessor
 import open_learning_ai_tutor.IntentSelector as IntentSelector
 import open_learning_ai_tutor.PromptGenerator as PromptGenerator
 import open_learning_ai_tutor.Intermediary as Intermediary
@@ -112,7 +112,7 @@ def _single_message_tutor(problem: str, solution: str, client, new_messages: str
     problem, solution, client, new_messages, chat_history, assessment_history, intent_history, tools = StratL_json_input_to_python(problem, solution, client, new_messages, chat_history, assessment_history, intent_history, tools)
     model = client.model_name
     assessor_client = options.get("assessor_client", None)
-    assessor = Assessor.GraphAssessor2(model, client=assessor_client, assessment_history=assessment_history, new_messages=new_messages, options = options)
+    assessor = Assessor.Assessor(client=assessor_client, assessment_history=assessment_history, new_messages=new_messages)
     intentSelector = IntentSelector.SimpleIntentSelector2(intent_history)
     promptGenerator = PromptGenerator.SimplePromptGenerator2(chat_history = chat_history, options = options)
     intermediary = Intermediary.GraphIntermediary2(model, assessor = assessor, intentSelector = intentSelector, promptGenerator = promptGenerator)

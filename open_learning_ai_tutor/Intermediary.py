@@ -1,6 +1,6 @@
 import open_learning_ai_tutor.PromptGenerator as PromptGenerator
 import open_learning_ai_tutor.IntentSelector as IntentSelector
-import open_learning_ai_tutor.Assessor as Assessor
+import open_learning_ai_tutor.assessor as Assessor
 
 def_options = {"version":"V1","tools":None}
 
@@ -42,14 +42,15 @@ class GraphIntermediary2(Intermediary):
     def __init__(self,model,assessor = None, intentSelector=None,promptGenerator = None,chat_history = [],intent_history = [],assessment_history=[], options = dict()) -> None:
         self.model = model
         self.options = options
-        self.assessor = Assessor.GraphAssessor2(self.model,assessment_history = assessment_history, new_messages=[], options = options) if assessor is None else assessor
+        self.assessor = assessor
         self.intentSelector = IntentSelector.SimpleIntentSelector2(intent_history=intent_history, options = options) if intentSelector is None else intentSelector
         self.promptGenerator = PromptGenerator.SimplePromptGenerator2(options = options, chat_history = chat_history) if promptGenerator is None else promptGenerator
 
     def get_prompt2(self,pb,sol):
-        assessment_history,metadata = self.assessor.assess2(pb,sol)
+        assessment_history = self.assessor.assess(pb,sol)
+        metadata = {}
         assessment = assessment_history[-1].content
-        
+
         docs = None
         rag_questions = None
         if "docs" in metadata:
