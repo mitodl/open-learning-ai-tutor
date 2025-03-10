@@ -47,7 +47,7 @@ class GraphIntermediary2(Intermediary):
         self.promptGenerator = PromptGenerator.SimplePromptGenerator2(options = options, chat_history = chat_history) if promptGenerator is None else promptGenerator
 
     def get_prompt2(self,pb,sol):
-        assessment_history,metadata = self.assessor.assess2(pb,sol)
+        assessment_history,metadata = self.assessor.assess(pb,sol)
         assessment = assessment_history[-1].content
         
         docs = None
