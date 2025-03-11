@@ -1,10 +1,7 @@
 import json
 from typing import Literal
 
-from langchain_anthropic import ChatAnthropic
-from langchain_together import ChatTogether
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
-from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
@@ -12,13 +9,12 @@ from open_learning_ai_tutor.tools import execute_python, python_calculator
  
 class Assessor():
     def __init__(self, client, assessment_history,new_messages, tools=None) -> None:      
-        self.history = list(assessment_history)
+        self.history = assessment_history
         self.new_messages = new_messages
         
         if tools is None:
             tools = [execute_python, python_calculator]
 
-        tool_node = None  
         client = client.bind_tools(tools)
         tool_node = ToolNode(tools)
         self.client = client
@@ -97,17 +93,17 @@ class Assessor():
             return "System"
         return ""
     
-    def get_purpose(self,pb,sol, docs=None):
+    def get_purpose(self,problem,solution, docs=None):
         purpose = \
         f"""A student and their tutor are working on a math problem:
 *Problem Statement*:
 <problem>
-{pb}
+{problem}
 </problem>
 
 The *Provided Solution* of this problem is:
 <solution>
-{sol}
+{solution}
 </solution>
 
 {"*Textbook passages* that may be relevant to your task:" if docs is not None else ""}
@@ -162,12 +158,12 @@ Analyze the last student's utterance.
         
     
 
-    def create_prompt(self,pb,sol):
+    def create_prompt(self,problem,solution):
         docs = None
 
         self.docs = docs
 
-        purpose = self.get_purpose(pb,sol,docs)
+        purpose = self.get_purpose(problem,solution,docs)
 
         if len(self.history) > 0:
             prompt = self.history
@@ -180,8 +176,8 @@ Analyze the last student's utterance.
         prompt.append(HumanMessage(content=self.get_transcript(self.new_messages,from_history=False)))
         return prompt
     
-    def assess(self,pb,sol):
-        prompt = self.create_prompt(pb,sol)
+    def assess(self,problem,solution):
+        prompt = self.create_prompt(problem,solution)
 
         final_state = self.app.invoke(
             {"messages": prompt},
