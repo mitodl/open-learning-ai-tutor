@@ -9,7 +9,7 @@ from open_learning_ai_tutor.tools import execute_python, python_calculator
  
 class Assessor():
     def __init__(self, client, assessment_history,new_messages, tools=None) -> None:      
-        self.history = assessment_history
+        self.assessment_history = assessment_history
         self.new_messages = new_messages
         
         if tools is None:
@@ -19,7 +19,6 @@ class Assessor():
         tool_node = ToolNode(tools)
         self.client = client
 
-        # Define the asessor's graph
         def should_continue(state: MessagesState) -> Literal["tools", END]:
             messages = state['messages']
             last_message = messages[-1]
@@ -30,48 +29,31 @@ class Assessor():
             return END
 
 
-        # Define the function that calls the model
         def call_model(state: MessagesState):
             messages = state['messages']
             response = self.client.invoke(
-                messages,
-                config={"configurable": {"thread_id": 42}}
+                messages
             )
             # We return a list, because this will get added to the existing list
             return {"messages": [response]}
 
-        # Define a new graph
         workflow = StateGraph(MessagesState)
 
-        # Define the two nodes we will cycle between
         workflow.add_node("agent", call_model)
-        if tool_node is not None:
-            workflow.add_node("tools", tool_node)
+        workflow.add_node("tools", tool_node)
 
-        # Set the entrypoint as `retriever`
-        # This means that this node is the first one called
+       
         workflow.add_edge(START, 'agent')
 
-        # We now add a conditional edge
-        if tool_node is not None:
-            workflow.add_conditional_edges(
-                # First, we define the start node. We use `agent`.
-                # This means these are the edges taken after the `agent` node is called.
-                "agent",
-                # Next, we pass in the function that will determine which node is called next.
-                should_continue,
-            )
-        else:
-            workflow.add_edge("agent", END)
-
-        # We now add a normal edge from `tools` to `agent`.
-        # This means that after `tools` is called, `agent` node is called next.
+  
+        workflow.add_conditional_edges(
+            "agent",
+            should_continue,
+         )
+     
         workflow.add_edge("tools", 'agent')
 
-        # Initialize memory to persist state between graph runs
-        checkpointer = MemorySaver()
-
-        app = workflow.compile(checkpointer=checkpointer)
+        app = workflow.compile()
         self.app = app
 
     def transcript_line(self,message):
@@ -93,7 +75,7 @@ class Assessor():
             return "System"
         return ""
     
-    def get_purpose(self,problem,solution, docs=None):
+    def get_intital_prompt(self,problem,solution):
         purpose = \
         f"""A student and their tutor are working on a math problem:
 *Problem Statement*:
@@ -105,10 +87,6 @@ The *Provided Solution* of this problem is:
 <solution>
 {solution}
 </solution>
-
-{"*Textbook passages* that may be relevant to your task:" if docs is not None else ""}
-{"<textbook>" +  docs if docs is not None else ""}
-{"</textbook>" if docs is not None else ""}
 
 The tutor's utterances are preceded by "Tutor:" and the student's utterances are preceded by "Student:".
 
@@ -139,17 +117,12 @@ Answer in the following JSON format ONLY and do not output anything else:
 }}
 ##
 Analyze the last student's utterance.
-{{
 """
         return purpose
     
-    def get_transcript(self, new_messages, from_history = True):
+    def get_transcript(self, new_messages):
         transcript = ""
-        if from_history:
-            for message in self.history:
-                if isinstance(message,HumanMessage):
-                    transcript += message.content+"\n"
-        # add the new tutor and student messages
+
         for message in new_messages:
             if not (isinstance(message,ToolMessage) and message.name == "text_student"):
                 a = self.transcript_line(message)
@@ -158,46 +131,24 @@ Analyze the last student's utterance.
         
     
 
-    def create_prompt(self,problem,solution):
-        docs = None
-
-        self.docs = docs
-
-        purpose = self.get_purpose(problem,solution,docs)
-
-        if len(self.history) > 0:
-            prompt = self.history
+    def create_prompt(self, problem, solution):
+        if len(self.assessment_history) > 0:
+            prompt = self.assessment_history
+            if not isinstance(prompt[0],SystemMessage):
+                initial_prompt = self.get_intital_prompt(problem, solution)
+                prompt.insert(0,SystemMessage(initial_prompt))
         else:
-            prompt = [SystemMessage(purpose)] 
+            initial_prompt = self.get_intital_prompt(problem, solution)
+            prompt = [SystemMessage(initial_prompt)] 
         
-        if not isinstance(prompt[0],SystemMessage):
-            prompt.insert(0,SystemMessage(purpose))
-        
-        prompt.append(HumanMessage(content=self.get_transcript(self.new_messages,from_history=False)))
+        prompt.append(HumanMessage(content=self.get_transcript(self.new_messages)))
         return prompt
     
     def assess(self,problem,solution):
-        prompt = self.create_prompt(problem,solution)
-
+        prompt = self.create_prompt(problem, solution)
         final_state = self.app.invoke(
-            {"messages": prompt},
-            config={"configurable": {"thread_id": 42}}
+            {"messages": prompt}
         )
 
-        response = final_state['messages'][-1].content.replace("\\(","$").replace("\\)","$").replace("\\[","$$").replace("\\]","$$").replace("\\","")
-        # postprocess make sure the format is right
-        s = response.find('{')
-        e = response.rfind('}')
-        response = response[s:e+1]
-        json_data = json.loads(response)
-        selection = json_data['selection']
-        selection = selection.replace(' ','').replace(',','')
-        json_data['selection'] = selection
-        assessment = json.dumps(json_data)
-
-        self.history = final_state['messages']
-        final_state['messages'][-1].content = assessment
-
-        
-        return self.history
+        return final_state['messages']
     
