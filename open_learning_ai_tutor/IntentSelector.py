@@ -1,6 +1,8 @@
 from open_learning_ai_tutor.taxonomy import Intent
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 
 class IntentSelector():
     def __init__(self,intent_history=[]) -> None:
@@ -14,10 +16,17 @@ class IntentSelector():
         return intents
     
     def extract_assessment_codes(self,assessment):
-        json_data = json.loads(assessment)
-        selection = json_data['selection']
-        codes = list(selection)
-        return codes
+        try:
+            json_data = json.loads(assessment)
+            selection = json_data['selection']
+            codes = list(selection)
+            return codes
+        except json.decoder.JSONDecodeError:
+            logger.error(
+                f"Error decoding assessment: {assessment}. Defaulting to m) The student is asking about concepts "
+                "or information related to the material covered by the problem, or is continuing such a discussion. "
+            )
+            return ['m']
         
     def get_intent_aux(self,previous_intent,assessment_codes,open_problem=True):
         if not open_problem and 'j' in assessment_codes: # if the problem is not open, then it has only one solution
