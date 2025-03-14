@@ -1,0 +1,45 @@
+name: CI
+on: [push]
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+
+    services:
+
+      redis:
+        image: redis:7.4.2
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: update apt
+        run: sudo apt-get update -y
+
+      - name: Apt install
+        run: cat Aptfile | sudo xargs apt-get install
+
+      - name: Install poetry
+        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1
+        with:
+          version: 1.7.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+        with:
+          python-version: "3.12.6"
+          cache: "poetry"
+
+      - name: Validate lockfile
+        run: poetry check --lock
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Tests
+        run: |
+          poetry run pytest
+      
+  

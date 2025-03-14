@@ -6,9 +6,9 @@ from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 from open_learning_ai_tutor.tools import execute_python, python_calculator
 
+
 def get_inital_prompt(problem, solution):
-    prompt = \
-        f"""A student and their tutor are working on a math problem:
+    prompt = f"""A student and their tutor are working on a math problem:
 *Problem Statement*:
 <problem>
 {problem}
@@ -51,11 +51,12 @@ Analyze the last student's utterance.
 """
     return prompt
 
-class Assessor():
-    def __init__(self, client, assessment_history, new_messages, tools=None) -> None:      
+
+class Assessor:
+    def __init__(self, client, assessment_history, new_messages, tools=None) -> None:
         self.assessment_history = assessment_history
         self.new_messages = new_messages
-        
+
         if tools is None:
             tools = [execute_python, python_calculator]
 
@@ -64,7 +65,7 @@ class Assessor():
         self.client = client
 
         def should_continue(state: MessagesState) -> Literal["tools", END]:
-            messages = state['messages']
+            messages = state["messages"]
             last_message = messages[-1]
             # If the LLM makes a tool call, then we route to the "tools" node
             if last_message.tool_calls:
@@ -72,12 +73,9 @@ class Assessor():
             # Otherwise, we stop (reply to the user)
             return END
 
-
         def call_model(state: MessagesState):
-            messages = state['messages']
-            response = self.client.invoke(
-                messages
-            )
+            messages = state["messages"]
+            response = self.client.invoke(messages)
             # We return a list, because this will get added to the existing list
             return {"messages": [response]}
 
@@ -86,40 +84,33 @@ class Assessor():
         workflow.add_node("agent", call_model)
         workflow.add_node("tools", tool_node)
 
-       
-        workflow.add_edge(START, 'agent')
+        workflow.add_edge(START, "agent")
 
-  
         workflow.add_conditional_edges(
             "agent",
             should_continue,
-         )
-     
-        workflow.add_edge("tools", 'agent')
+        )
+
+        workflow.add_edge("tools", "agent")
 
         app = workflow.compile()
         self.app = app
-    
-    
+
     def create_prompt(self, problem, solution):
         initial_prompt = get_inital_prompt(problem, solution)
-        prompt = [SystemMessage(initial_prompt)] 
+        prompt = [SystemMessage(initial_prompt)]
 
         if len(self.assessment_history) > 0:
             prompt = prompt + self.assessment_history
-           
+
         new_messages_text = ""
         for message in self.new_messages:
-            new_messages_text +=" Student: \""+message.content+"\""
+            new_messages_text += ' Student: "' + message.content + '"'
         prompt.append(HumanMessage(content=new_messages_text))
         return prompt
-    
-    def assess(self,problem,solution):
-        prompt = self.create_prompt(problem, solution)
-        final_state = self.app.invoke(
-            {"messages": prompt}
-        )
 
-        return final_state['messages']
-    
-   
+    def assess(self, problem, solution):
+        prompt = self.create_prompt(problem, solution)
+        final_state = self.app.invoke({"messages": prompt})
+
+        return final_state["messages"]

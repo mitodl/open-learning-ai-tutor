@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Intent(Enum):
     # Problematizing category
     P_LIMITS = 1
@@ -24,10 +25,7 @@ class Intent(Enum):
     A_CONTROL = 23
     A_CURIOSITY = 24
 
-    #Generic category
+    # Generic category
     G_GREETINGS = 31
     G_OTHER = 32
     G_REFUSE = 33
-
-
-    

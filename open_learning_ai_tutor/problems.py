@@ -2,8 +2,7 @@
 
 ## Analytics Edge Problems ##
 
-A1_intro = \
-"""We often take data for granted. However, one of the hardest parts about analyzing a problem you're interested in can be to find good data to answer the questions you want to ask. As you're learning R, though, there are many datasets that R has built in that you can take advantage of.
+A1_intro = """We often take data for granted. However, one of the hardest parts about analyzing a problem you're interested in can be to find good data to answer the questions you want to ask. As you're learning R, though, there are many datasets that R has built in that you can take advantage of.
 In this problem, we will be examining the "state" dataset, which has data from the 1970s on all fifty US states. For each state, the dataset includes the population, per capita income, illiteracy rate, murder rate, high school graduation rate, average number of frost days, area, latitude and longitude, division the state belongs to, region the state belongs to, and two-letter abbreviation.
 
 Load the dataset and convert it to a data frame by running the following two commands in R:
@@ -31,8 +30,7 @@ This dataset has 50 observations (one for each US state) and the following 15 va
 • `state.name` - the full names of each state  
 • `state.region` - the region each state belong to (Northeast, South, North Central, or West)  
 """
-A1P1 = \
- f"""1. Predicting Life Expectancy in the United States  
+A1P1 = f"""1. Predicting Life Expectancy in the United States  
  {A1_intro}
 
 Problem 1.1 Data Exploration  
@@ -81,8 +79,7 @@ The correct answer is New York. If you first use the subset command:
 `NortheastData = subset(statedata, state.region == "Northeast")`
 You can then look at `NortheastData$Murder` together with `NortheastData$state.abb` to identify the outlier."""
 
-A1P2 = \
-f"""
+A1P2 = f"""
 {A1_intro}
 
 
@@ -143,8 +140,7 @@ ANSWER:
 EXPLANATION:
 Although income is an insignificant variable in the model, this does not mean that there is no association between income and life expectancy. However, in the presence of all of the other variables, income does not add statistically significant explanatory power to the model. This means that multicollinearity is probably the issue."""
 
-A1P3 = \
-f"""{A1_intro}
+A1P3 = f"""{A1_intro}
 
 Problem 3.1 - Predicting Life Expectancy - Refining the Model and Analyzing Predictions  
 Recall that we discussed the principle of simplicity: that is, a model with fewer variables is preferable to a model with many unnnecessary variables. Experiment with removing independent variables from the original model. Remember to use the significance of the coefficients to decide which variables to remove (remove the one with the largest "p-value" first, or the one with the "t value" closest to zero), and to remove them one at a time (this is called "backwards variable selection"). This is important due to multicollinearity issues - removing one insignificant variable may make another previously insignificant variable become significant.
@@ -267,8 +263,7 @@ You can look at the sorted list of absolute errors by typing `sort(abs(model$res
 
 ###
 
-A1P1_sol = \
-f"""1. Predicting Life Expectancy in the United States  
+A1P1_sol = f"""1. Predicting Life Expectancy in the United States  
 Problem 1.1 Data Exploration  
 In the R command you used to generate this plot, which variable name did you use as the first argument?
 ANSWER: 
@@ -296,8 +291,7 @@ The correct answer is New York. If you first use the subset command:
 `NortheastData = subset(statedata, state.region == "Northeast")`
 You can then look at `NortheastData$Murder` together with `NortheastData$state.abb` to identify the outlier."""
 
-A1P2_sol = \
-"""
+A1P2_sol = """
 Problem 2.1 - Predicting Life Expectancy - An Initial Model  
 What is the coefficient for "Income" in your linear regression model?
 ANSWER:
@@ -336,8 +330,7 @@ ANSWER:
 EXPLANATION:
 Although income is an insignificant variable in the model, this does not mean that there is no association between income and life expectancy. However, in the presence of all of the other variables, income does not add statistically significant explanatory power to the model. This means that multicollinearity is probably the issue."""
 
-A1P3_sol = \
-"""
+A1P3_sol = """
 
 Problem 3.1 - Predicting Life Expectancy - Refining the Model and Analyzing Predictions  
 You should be able to find a good model with only 4 independent variables, instead of the original 7. Which variables does this model contain?
@@ -416,8 +409,7 @@ You can look at the sorted list of absolute errors by typing `sort(abs(model$res
 
 ## Pbs with no sol
 
-A1P1_pb = \
- f"""1. Predicting Life Expectancy in the United States  
+A1P1_pb = f"""1. Predicting Life Expectancy in the United States  
  {A1_intro}
 
 Problem 1.1 Data Exploration  
@@ -450,8 +442,7 @@ You should see that there is an outlier in the Northeast region of the boxplot y
     4. New York
 """
 
-A1P2_pb = \
-f"""
+A1P2_pb = f"""
 {A1_intro}
 
 
@@ -491,8 +482,7 @@ The model we built does not display the relationship we saw from the plot of lif
 2. Multicollinearity
 """
 
-A1P3_pb = \
-f"""{A1_intro}
+A1P3_pb = f"""{A1_intro}
 
 Problem 3.1 - Predicting Life Expectancy - Refining the Model and Analyzing Predictions  
 Recall that we discussed the principle of simplicity: that is, a model with fewer variables is preferable to a model with many unnnecessary variables. Experiment with removing independent variables from the original model. Remember to use the significance of the coefficients to decide which variables to remove (remove the one with the largest "p-value" first, or the one with the "t value" closest to zero), and to remove them one at a time (this is called "backwards variable selection"). This is important due to multicollinearity issues - removing one insignificant variable may make another previously insignificant variable become significant.
@@ -568,15 +558,15 @@ b. For which state do we make the largest absolute error?
 """
 
 
-
 ################################## Functions ####################################
 
-eq = {"A1P1":(A1P1_pb,A1P1_sol),
-      "A1P2":(A1P2_pb,A1P2_sol),
-      "A1P3":(A1P3_pb,A1P3_sol)
-      }
+eq = {
+    "A1P1": (A1P1_pb, A1P1_sol),
+    "A1P2": (A1P2_pb, A1P2_sol),
+    "A1P3": (A1P3_pb, A1P3_sol),
+}
 
 
 def get_pb_sol(topic):
-    pb,sol = eq[topic]
-    return pb,sol
+    pb, sol = eq[topic]
+    return pb, sol
