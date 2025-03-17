@@ -1,6 +1,6 @@
 import open_learning_ai_tutor.utils as utils
 from langchain_core.messages import SystemMessage
-from open_learning_ai_tutor.taxonomy import Intent
+from open_learning_ai_tutor.constants import Intent
 
 
 # Old version. We used SimplePromptGenerator2 instead.
@@ -50,7 +50,7 @@ Provide the least amount of scaffolding possible to help the student solve the p
         if Intent.P_CONNECTION in intents:
             intent_prompt += "Underline the implication of the answer in the context of the problem.\n"
         if Intent.S_SELFCORRECTION in intents:
-            intent_prompt += "Help the study identify errors in their answer.\n"
+            intent_prompt += "Help the student identify errors in their answer.\n"
         if Intent.S_CORRECTION in intents:
             intent_prompt += "Hint the student to correct their mistakes.\n"
         if Intent.S_STRATEGY in intents:
@@ -65,7 +65,7 @@ Provide the least amount of scaffolding possible to help the student solve the p
             intent_prompt += (
                 "State the theorem or definition the student is asking about.\n"
             )
-        if Intent.S_OFFLOAD in intents:
+        if Intent.S_CALCULATION in intents:
             intent_prompt += "If there is one, correct and perform the numerical computation for the student.\n"  # could include it, as done by a calculator...
         if Intent.A_CHALLENGE in intents:
             intent_prompt += "Maintain a sense of challenge.\n"
@@ -162,7 +162,7 @@ Provide the least amount of scaffolding possible to help the student solve the p
             intent_prompt += "Consider first a simpler version of the problem.\n"
         if Intent.S_STATE in intents:
             intent_prompt += "State the theorem, definition or programming command the student is asking about. You can use the whiteboard tool to explain. Keep the original exercise in mind. DO NOT REVEAL ANY PART OF THE EXERCISE'S SOLUTION: use other examples.\n"
-        if Intent.S_OFFLOAD in intents:
+        if Intent.S_CALCULATION in intents:
             intent_prompt += (
                 "Correct and perform the numerical computation for the student.\n"
             )
@@ -183,7 +183,7 @@ Provide the least amount of scaffolding possible to help the student solve the p
             if (
                 Intent.S_CORRECTION in intents
                 or Intent.S_CORRECTION in intents
-                or Intent.S_OFFLOAD in intents
+                or Intent.S_CALCULATION in intents
             ):
                 intent_prompt += "Consider the student's mistake, if there is one.\n"
         intent_prompt += "Conisder ONE question at a time, unless the student correctly answered multiple in one message."
