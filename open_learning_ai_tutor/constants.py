@@ -16,7 +16,7 @@ class Intent(Enum):
     S_STRATEGY = 13
     S_STATE = 14
     S_SIMPLIFY = 15
-    S_OFFLOAD = 16
+    S_CALCULATION = 16
     S_HINT = 17
 
     # Affective category
@@ -29,3 +29,19 @@ class Intent(Enum):
     G_GREETINGS = 31
     G_OTHER = 32
     G_REFUSE = 33
+
+
+class Assesment(Enum):
+    WRONG = "a"
+    ALGEBRAIC_ERROR = "b"
+    NUMERICAL_ERROR = "c"
+    INCOMPLETE_SOLUTION = "d"
+    AMBIGUOUS_ANSWER = "e"
+    PARTIAL_CORRECT_ANSWER = "f"
+    ASKING_FOR_SOLUTION = "g"
+    ASKING_FOR_DEFINITION = "h"
+    ASKING_FOR_CALCULATION = "i"
+    COMPLETE_SOLUTION = "j"
+    COMPLETE_SOLUTION_EQUIVALENT = "k"
+    IRRELEVANT_MESSAGE = "l"
+    ASKING_FOR_CONCEPTS = "m"

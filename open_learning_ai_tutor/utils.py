@@ -1,5 +1,5 @@
 import json
-from open_learning_ai_tutor.taxonomy import Intent
+from open_learning_ai_tutor.constants import Intent
 
 
 def json_to_intent_list(json_str):
