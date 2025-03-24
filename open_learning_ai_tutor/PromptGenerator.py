@@ -8,7 +8,9 @@ class PromptGenerator:
     def __init__(self, version="V1") -> None:
         self.version = version
 
-    def get_prompt(self, pb, sol, student_messages, tutor_messages, intents):
+    def get_prompt(
+        self, problem, problem_set, student_messages, tutor_messages, intents
+    ):
         system_msg = f"""Act as an experienced tutor. Characteristics of a good tutor include:
     • Promote a sense of challenge, curiosity, feeling of control
     • Prevent student from becoming frustrated
@@ -22,10 +24,13 @@ Use latex formatting with the sign '$' for mathematical expressions. For example
 Remember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.
 
 Provide guidance for the problem:
-"{pb}"
-    
-The solution for this problem is : 
-"{sol}"
+{problem}
+
+This problem is in xml format and includes a solution. The problem is part of a problem set.
+
+{problem_set}
+
+Some information required to solve the problem may be in other parts of the problem set.
 
 Provide the least amount of scaffolding possible to help the student solve the problem on their own. Be succint.
 """
@@ -95,7 +100,7 @@ class SimplePromptGenerator2(PromptGenerator):
 
         self.chat_history = chat_history
 
-    def get_prompt2(self, pb, sol, intents, options=dict()):
+    def get_prompt2(self, problem, problem_set, intents, options=dict()):
         if "docs" in options:
             retrieved_text = options["docs"]
         # re-create the system message each time because it depends on the retrieved docuemnts
@@ -112,10 +117,13 @@ You are comunicating through messages. Use latex formatting with the sign '$' fo
 Remember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.
 
 Provide guidance for the problem:
-"{pb}"
-    
-The solution for this problem is : 
-"{sol}"
+{problem}
+
+This problem is in xml format and includes a solution. The problem is part of a problem set.
+
+{problem_set}
+
+Some information required to solve the problem may be in other parts of the problem set.
 
 {'Some passages from the class textbook that may or may not be relevant:' if self.version=="V2" and retrieved_text!=None else ""}
 {'""' + retrieved_text if self.version=="V2" and retrieved_text!=None else ""}

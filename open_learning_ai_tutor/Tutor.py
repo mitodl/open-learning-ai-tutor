@@ -98,8 +98,8 @@ class GraphTutor2(Tutor):
     def __init__(
         self,
         client,
-        pb,
-        sol,
+        problem,
+        problem_set,
         model="gpt-4o-mini",
         intermediary=None,
         intent_history=[],
@@ -107,7 +107,7 @@ class GraphTutor2(Tutor):
         tools=None,
         options=dict(),
     ) -> None:
-        self.pb, self.sol = pb, sol
+        self.problem, self.problem_set = problem, problem_set
         if "open" in options:
             self.open = options["open"]
         else:
@@ -232,7 +232,7 @@ class GraphTutor2(Tutor):
     def get_response2(self):
 
         prompt, intent, assessment, metadata = self.intermediary.get_prompt2(
-            self.pb, self.sol
+            self.problem, self.problem_set
         )
 
         final_state = self.app.invoke(
