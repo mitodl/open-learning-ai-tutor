@@ -45,8 +45,6 @@ class GraphIntermediary2:
         )
         intent = get_intent(assessment, previous_intent)
 
-        
-
         chat_history = self.promptGenerator.get_prompt2(
             problem, problem_set, intent, self.options
         )
