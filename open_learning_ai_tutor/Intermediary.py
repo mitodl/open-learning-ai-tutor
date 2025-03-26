@@ -28,8 +28,8 @@ class GraphIntermediary2:
             else promptGenerator
         )
 
-    def get_prompt2(self, pb, sol):
-        assessment_history = self.assessor.assess(pb, sol)
+    def get_prompt2(self, problem, problem_set):
+        assessment_history = self.assessor.assess(problem, problem_set)
         metadata = {}
         assessment = assessment_history[-1].content
 
@@ -45,6 +45,8 @@ class GraphIntermediary2:
         )
         intent = get_intent(assessment, previous_intent)
 
-        chat_history = self.promptGenerator.get_prompt2(pb, sol, intent, self.options)
+        chat_history = self.promptGenerator.get_prompt2(
+            problem, problem_set, intent, self.options
+        )
 
         return chat_history, intent, assessment_history, metadata

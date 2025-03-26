@@ -7,17 +7,18 @@ from langgraph.prebuilt import ToolNode
 from open_learning_ai_tutor.tools import execute_python, python_calculator
 
 
-def get_inital_prompt(problem, solution):
+def get_inital_prompt(problem, problem_set):
     prompt = f"""A student and their tutor are working on a math problem:
 *Problem Statement*:
-<problem>
 {problem}
-</problem>
 
-The *Provided Solution* of this problem is:
-<solution>
-{solution}
-</solution>
+This problem is in xml format and includes a solution. The problem is part of a problem set.
+
+*Problem Set*:
+
+{problem_set}
+
+Some information required to solve the problem may be in other parts of the problem set.
 
 The tutor's utterances are preceded by "Tutor:" and the student's utterances are preceded by "Student:".
 
@@ -96,8 +97,8 @@ class Assessor:
         app = workflow.compile()
         self.app = app
 
-    def create_prompt(self, problem, solution):
-        initial_prompt = get_inital_prompt(problem, solution)
+    def create_prompt(self, problem, problem_set):
+        initial_prompt = get_inital_prompt(problem, problem_set)
         prompt = [SystemMessage(initial_prompt)]
 
         if len(self.assessment_history) > 0:
@@ -109,8 +110,8 @@ class Assessor:
         prompt.append(HumanMessage(content=new_messages_text))
         return prompt
 
-    def assess(self, problem, solution):
-        prompt = self.create_prompt(problem, solution)
+    def assess(self, problem, problem_set):
+        prompt = self.create_prompt(problem, problem_set)
         final_state = self.app.invoke({"messages": prompt})
 
         return final_state["messages"]

@@ -15,8 +15,6 @@ import concurrent.futures
 
 ## functions called internally by StratL to interract with exernal app
 def StratL_json_input_to_python(
-    problem: str,
-    solution: str,
     client,
     new_messages: str,
     chat_history: str,
@@ -29,8 +27,6 @@ def StratL_json_input_to_python(
     intent_history = json_to_intent_list(intent_history)
     new_messages = json_to_messages(new_messages)
     return (
-        problem,
-        solution,
         client,
         new_messages,
         chat_history,
@@ -118,7 +114,7 @@ def serialize_A_B_test_responses(list_of_dicts):
 ## Actual StratL interface
 def message_tutor(
     problem: str,
-    solution: str,
+    problem_set: str,
     client,
     new_messages: str,
     chat_history: str,
@@ -131,8 +127,8 @@ def message_tutor(
     Obtain the next response from the tutor given a message and the current state of the conversation.
 
     Args:
-        problem (str): The problem text
-        solution (str): The solution text
+        problem (str): The problem xml
+        problem_set (str): The problem set xml
         client: A langchain client
         new_messages (json): json of new messages
         chat_history (json): json of chat history
@@ -149,7 +145,7 @@ def message_tutor(
         new_history, new_intent_history, new_assessment_history, metadata = (
             _single_message_tutor(
                 problem,
-                solution,
+                problem_set,
                 client,
                 new_messages,
                 chat_history,
@@ -169,7 +165,7 @@ def message_tutor(
             future1 = executor.submit(
                 _single_message_tutor,
                 problem,
-                solution,
+                problem_set,
                 client,
                 new_messages,
                 chat_history,
@@ -181,7 +177,7 @@ def message_tutor(
             future2 = executor.submit(
                 _single_message_tutor,
                 problem,
-                solution,
+                problem_set,
                 client,
                 new_messages,
                 chat_history,
@@ -229,7 +225,7 @@ def message_tutor(
 
 def _single_message_tutor(
     problem: str,
-    solution: str,
+    problem_set: str,
     client,
     new_messages: str,
     chat_history: str,
@@ -240,8 +236,6 @@ def _single_message_tutor(
 ):
     """Internal function that contains the original message_tutor logic"""
     (
-        problem,
-        solution,
         client,
         new_messages,
         chat_history,
@@ -249,8 +243,6 @@ def _single_message_tutor(
         intent_history,
         tools,
     ) = StratL_json_input_to_python(
-        problem,
-        solution,
         client,
         new_messages,
         chat_history,
@@ -276,8 +268,8 @@ def _single_message_tutor(
     )
     tutor = Tutor.GraphTutor2(
         client,
-        pb=problem,
-        sol=solution,
+        problem=problem,
+        problem_set=problem_set,
         model=model,
         intermediary=intermediary,
         options=options,

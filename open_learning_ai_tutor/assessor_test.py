@@ -55,11 +55,11 @@ async def test_create_prompt(mocker, existing_assessment_history):
     assessor = Assessor(mock_client, assessment_history, new_messages)
 
     problem = "problem"
-    solution = "solution"
+    problem_set = "problem_set"
 
-    prompt = assessor.create_prompt(problem, solution)
+    prompt = assessor.create_prompt(problem, problem_set)
 
-    initial_prompt = SystemMessage(get_inital_prompt(problem, solution))
+    initial_prompt = SystemMessage(get_inital_prompt(problem, problem_set))
     new_messages_prompt_part = HumanMessage(
         content=' Student: "what if i took the mean?"'
     )
