@@ -1,4 +1,4 @@
-import open_learning_ai_tutor.PromptGenerator as PromptGenerator
+from open_learning_ai_tutor.prompts import get_problem_prompt, get_intent_prompt
 from open_learning_ai_tutor.intent_selector import get_intent
 from open_learning_ai_tutor.constants import Intent
 
@@ -21,7 +21,7 @@ class GraphIntermediary2:
         self.assessor = assessor
         self.intent_history = intent_history
         self.promptGenerator = (
-            PromptGenerator.SimplePromptGenerator2(
+            prompt_generator.SimplePromptGenerator2(
                 options=options, chat_history=chat_history
             )
             if promptGenerator is None
@@ -44,6 +44,8 @@ class GraphIntermediary2:
             else [Intent.S_STRATEGY]
         )
         intent = get_intent(assessment, previous_intent)
+
+        
 
         chat_history = self.promptGenerator.get_prompt2(
             problem, problem_set, intent, self.options
