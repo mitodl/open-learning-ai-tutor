@@ -31,7 +31,6 @@ class GraphIntermediary2:
         if "rag_queries" in metadata:
             self.options["rag_questions"] = metadata["rag_queries"]
 
-        print("hihihihi")
         previous_intent = (
             self.intent_history[-1]
             if self.intent_history != []
