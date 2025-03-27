@@ -29,49 +29,38 @@ Some information required to solve the problem may be in other parts of the prob
 Provide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student's progresses and right answers. Your student can only see the text you send them using your `text_student` tool, the rest of your thinking is hidden to them."""
 
 
+intent_mapping = {
+    Intent.P_LIMITS: "Make the student identify the limits of their reasoning or answer by asking them questions.\n",
+    Intent.P_GENERALIZATION: "Ask the student to generalize their answer.\n",
+    Intent.P_HYPOTHESIS: "Ask the student to start by providing a guess or explain their intuition of the problem.\n",
+    Intent.P_ARTICULATION: "Ask the student to write their intuition mathematically or detail their answer.\n",
+    Intent.P_REFLECTION: "Step back and reflect on the solution. Ask to recapitulate and *briefly* underline more general implications and connections.\n",
+    Intent.P_CONNECTION: "Underline the implication of the answer in the context of the problem.\n",
+    Intent.S_SELFCORRECTION: "If there is a mistake in the student's answer, tell the student there is a mistake in an encouraging way and make them identify it *by themself*.\n",
+    Intent.S_CORRECTION: "Correct the student's mistake if there is one, by stating or hinting them what is wrong.\nConsider the student's mistake, if there is one.\n",
+    Intent.S_STRATEGY: "Acknowledge the progress. Encourage and make the student find on their own what is the next step to solve the problem, for example by asking a question. You can also move on to the next part\n",
+    Intent.S_HINT: "Give a hint to the student to help them find the next step. Do *not* provide the answer.\n",
+    Intent.S_SIMPLIFY: "Consider first a simpler version of the problem.\n",
+    Intent.S_STATE: "State the theorem, definition or programming command the student is asking about. You can use the whiteboard tool to explain. Keep the original exercise in mind. DO NOT REVEAL ANY PART OF THE EXERCISE'S SOLUTION: use other examples.\n",
+    Intent.S_CALCULATION: "Correct and perform the numerical computation for the student.\nConsider the student's mistake, if there is one.\n",
+    Intent.A_CHALLENGE: "Maintain a sense of challenge.\n",
+    Intent.A_CONFIDENCE: "Bolster the student's confidence.\n",
+    Intent.A_CONTROL: "Promote a sense of control.\n",
+    Intent.A_CURIOSITY: "Evoke curiosity.\n",
+    Intent.G_GREETINGS: "Say goodbye and end the conversation\n",
+    Intent.G_OTHER: "",
+}
+
+
 def get_intent_prompt(intents):
     intent_prompt = ""
-    if Intent.P_LIMITS in intents:
-        intent_prompt += "Make the student identify the limits of their reasoning or answer by asking them questions.\n"
-    if Intent.P_GENERALIZATION in intents:
-        intent_prompt += "Ask the student to generalize their answer.\n"
-    if Intent.P_HYPOTHESIS in intents:
-        intent_prompt += "Ask the student to start by providing a guess or explain their intuition of the problem.\n"
-    if Intent.P_ARTICULATION in intents:
-        intent_prompt += "Ask the student to write their intuition mathematically or detail their answer.\n"
-    if Intent.P_REFLECTION in intents:
-        intent_prompt += "Step back and reflect on the solution. Ask to recapitulate and *briefly* underline more general implications and connections.\n"
-    if Intent.P_CONNECTION in intents:
-        intent_prompt += (
-            "Underline the implication of the answer in the context of the problem.\n"
-        )
-    if Intent.S_SELFCORRECTION in intents:
-        intent_prompt += "If there is a mistake in the student's answer, tell the student there is a mistake in an encouraging way and make them identify it *by themself*.\n"
-    if Intent.S_CORRECTION in intents:
-        intent_prompt += "Correct the student's mistake if there is one, by stating or hinting them what is wrong.\n"
-    if Intent.S_STRATEGY in intents:
-        intent_prompt += "Acknowledge the progress. Encourage and make the student find on their own what is the next step to solve the problem, for example by asking a question. You can also move on to the next part\n"  # "Encourage and make the student find on their own what is the next step to solve the problem by asking them what is the next step.\n"
-    if Intent.S_HINT in intents:
-        intent_prompt += "Give a hint to the student to help them find the next step. Do *not* provide the answer.\n"
-    if Intent.S_SIMPLIFY in intents:
-        intent_prompt += "Consider first a simpler version of the problem.\n"
-    if Intent.S_STATE in intents:
-        intent_prompt += "State the theorem, definition or programming command the student is asking about. You can use the whiteboard tool to explain. Keep the original exercise in mind. DO NOT REVEAL ANY PART OF THE EXERCISE'S SOLUTION: use other examples.\n"
-    if Intent.S_CALCULATION in intents:
-        intent_prompt += (
-            "Correct and perform the numerical computation for the student.\n"
-        )
-    if Intent.A_CHALLENGE in intents:
-        intent_prompt += "Maintain a sense of challenge.\n"
-    if Intent.A_CONFIDENCE in intents:
-        intent_prompt += "Bolster the student's confidence.\n"
-    if Intent.A_CONTROL in intents:
-        intent_prompt += "Promote a sense of control.\n"
-    if Intent.G_GREETINGS in intents:
-        intent_prompt += "Say goodbye and end the conversation\n"
 
-    if intent_prompt != "":
-        if Intent.S_CORRECTION in intents or Intent.S_CALCULATION in intents:
-            intent_prompt += "Consider the student's mistake, if there is one.\n"
+    if Intent.G_REFUSE in intents:
+        intent_prompt = "The student is asking something irrelevant to the problem. Explain politely that you can't help them on topics other than the problem. DO NOT ANSWER THEIR REQUEST\n"
+    else:
+        for intent in intents:
+            intent_prompt += intent_mapping.get(intent, "")
+
+    intent_prompt += " Your student can only see the text you send them using your `text_student` tool, the rest of your thinking is hidden to them."
 
     return intent_prompt

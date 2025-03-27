@@ -1,6 +1,7 @@
 from open_learning_ai_tutor.prompts import get_problem_prompt, get_intent_prompt
 from open_learning_ai_tutor.intent_selector import get_intent
 from open_learning_ai_tutor.constants import Intent
+from langchain_core.messages import SystemMessage
 
 def_options = {"version": "V1", "tools": None}
 
@@ -10,23 +11,15 @@ class GraphIntermediary2:
         self,
         model,
         assessor,
-        promptGenerator=None,
         chat_history=[],
         intent_history=[],
-        assessment_history=[],
         options=dict(),
     ) -> None:
         self.model = model
         self.options = options
         self.assessor = assessor
         self.intent_history = intent_history
-        self.promptGenerator = (
-            prompt_generator.SimplePromptGenerator2(
-                options=options, chat_history=chat_history
-            )
-            if promptGenerator is None
-            else promptGenerator
-        )
+        self.chat_history = chat_history
 
     def get_prompt2(self, problem, problem_set):
         assessment_history = self.assessor.assess(problem, problem_set)
@@ -38,6 +31,7 @@ class GraphIntermediary2:
         if "rag_queries" in metadata:
             self.options["rag_questions"] = metadata["rag_queries"]
 
+        print("hihihihi")
         previous_intent = (
             self.intent_history[-1]
             if self.intent_history != []
@@ -45,8 +39,14 @@ class GraphIntermediary2:
         )
         intent = get_intent(assessment, previous_intent)
 
-        chat_history = self.promptGenerator.get_prompt2(
-            problem, problem_set, intent, self.options
-        )
+        problem_prompt = get_problem_prompt(problem, problem_set)
+        intent_prompt = get_intent_prompt(intent)
 
-        return chat_history, intent, assessment_history, metadata
+        if isinstance(self.chat_history[0], SystemMessage):
+            self.chat_history[0] = SystemMessage(content=problem_prompt)
+        else:
+            self.chat_history.insert(0, SystemMessage(content=problem_prompt))
+
+        self.chat_history.append(SystemMessage(content=intent_prompt))
+
+        return self.chat_history, intent, assessment_history, metadata

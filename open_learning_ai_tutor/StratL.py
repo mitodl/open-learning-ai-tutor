@@ -261,6 +261,7 @@ def _single_message_tutor(
         model,
         assessor=assessor,
         intent_history=intent_history,
+        chat_history=chat_history,
     )
     tutor = Tutor.GraphTutor2(
         client,
