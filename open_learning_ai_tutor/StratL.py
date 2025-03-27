@@ -1,7 +1,6 @@
 import json
 import open_learning_ai_tutor.Tutor as Tutor
-import open_learning_ai_tutor.assessor as Assessor
-import open_learning_ai_tutor.PromptGenerator as PromptGenerator
+from open_learning_ai_tutor.assessor import Assessor
 import open_learning_ai_tutor.Intermediary as Intermediary
 from open_learning_ai_tutor.utils import (
     json_to_messages,
@@ -252,19 +251,17 @@ def _single_message_tutor(
     )
     model = client.model_name
     assessor_client = options.get("assessor_client", None)
-    assessor = Assessor.Assessor(
+    assessor = Assessor(
         client=assessor_client,
         assessment_history=assessment_history,
         new_messages=new_messages,
     )
-    promptGenerator = PromptGenerator.SimplePromptGenerator2(
-        chat_history=chat_history, options=options
-    )
+
     intermediary = Intermediary.GraphIntermediary2(
         model,
         assessor=assessor,
-        promptGenerator=promptGenerator,
         intent_history=intent_history,
+        chat_history=chat_history,
     )
     tutor = Tutor.GraphTutor2(
         client,
