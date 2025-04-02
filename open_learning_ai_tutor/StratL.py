@@ -1,7 +1,7 @@
 import json
-import open_learning_ai_tutor.Tutor as Tutor
-from open_learning_ai_tutor.assessor import Assessor
+from open_learning_ai_tutor.tutor import Tutor
 import open_learning_ai_tutor.Intermediary as Intermediary
+from open_learning_ai_tutor.prompts import get_assessment_prompt
 from open_learning_ai_tutor.utils import (
     json_to_messages,
     json_to_intent_list,
@@ -250,30 +250,26 @@ def _single_message_tutor(
         tools,
     )
     model = client.model_name
-    assessor_client = options.get("assessor_client", None)
-    assessor = Assessor(
-        client=assessor_client,
-        assessment_history=assessment_history,
-        new_messages=new_messages,
+    tutor = Tutor(
+        client,
+        tools=tools,
     )
+    assessment_prompt = get_assessment_prompt(
+        problem, problem_set, assessment_history, new_messages
+    )
+    assessment_response = tutor.get_response(assessment_prompt)
+    new_assessment_history = assessment_response["messages"]
 
-    intermediary = Intermediary.GraphIntermediary2(
+    intermediary = Intermediary.GraphIntermediary(
         model,
-        assessor=assessor,
+        assessment_history=new_assessment_history,
         intent_history=intent_history,
         chat_history=chat_history,
     )
-    tutor = Tutor.GraphTutor2(
-        client,
-        problem=problem,
-        problem_set=problem_set,
-        model=model,
-        intermediary=intermediary,
-        options=options,
-        tools=tools,
-    )
 
-    new_history, new_intent, new_assessment_history, metadata = tutor.get_response2()
+    prompt, new_intent, metadata = intermediary.get_prompt(problem, problem_set)
+
+    new_history = tutor.get_response(prompt)
     new_assessment_history = new_assessment_history[
         1:
     ]  # [1:] because we don't include system prompt

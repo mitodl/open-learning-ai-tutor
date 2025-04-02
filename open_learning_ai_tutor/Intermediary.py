@@ -6,25 +6,24 @@ from langchain_core.messages import SystemMessage
 def_options = {"version": "V1", "tools": None}
 
 
-class GraphIntermediary2:
+class GraphIntermediary:
     def __init__(
         self,
         model,
-        assessor,
+        assessment_history=[],
         chat_history=[],
         intent_history=[],
         options=dict(),
     ) -> None:
         self.model = model
         self.options = options
-        self.assessor = assessor
         self.intent_history = intent_history
         self.chat_history = chat_history
+        self.assessment_history = assessment_history
 
-    def get_prompt2(self, problem, problem_set):
-        assessment_history = self.assessor.assess(problem, problem_set)
+    def get_prompt(self, problem, problem_set):
         metadata = {}
-        assessment = assessment_history[-1].content
+        assessment = self.assessment_history[-1].content
 
         if "docs" in metadata:
             self.options["docs"] = metadata["docs"]
@@ -48,4 +47,4 @@ class GraphIntermediary2:
 
         self.chat_history.append(SystemMessage(content=intent_prompt))
 
-        return self.chat_history, intent, assessment_history, metadata
+        return self.chat_history, intent, metadata
