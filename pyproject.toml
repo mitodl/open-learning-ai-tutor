@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "open-learning-ai-tutor"
-version = "0.0.4"
+version = "0.0.5"
 description = "AI powered tutor"
 authors = ["MIT ODL"]
 readme = "README.md"
@@ -9,10 +9,7 @@ readme = "README.md"
 python = "^3.12"
 langchain = "^0.3.20"
 langgraph = "^0.3.10"
-langchain-openai = "^0.3.8"
-langchain-anthropic = "^0.3.10"
 langchain-core = "^0.3.45"
-langchain-together = "^0.3.0"
 langchain-experimental = "^0.3.4"
 e2b-code-interpreter = "^1.1.0"
 

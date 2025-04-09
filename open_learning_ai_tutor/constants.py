@@ -31,7 +31,7 @@ class Intent(Enum):
     G_REFUSE = 33
 
 
-class Assesment(Enum):
+class Assessment(Enum):
     WRONG = "a"
     ALGEBRAIC_ERROR = "b"
     NUMERICAL_ERROR = "c"

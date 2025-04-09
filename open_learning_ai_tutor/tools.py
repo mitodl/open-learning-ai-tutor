@@ -2,33 +2,6 @@ from langchain_core.tools import tool
 from langchain_experimental.utilities import PythonREPL
 
 
-@tool
-def text_student(message_to_student: str):
-    """A tool to send a message to your student. This tool is the only way for you to communicate with your student. The input should be your message. After the message is sent, you will wait for the student's next message."""
-    return "Message sent"
-
-
-@tool
-def display_figure(query):
-    """A tool to show figures to students. Input `query` is a matplotlib program displaying a figure.
-    Example input for `query`:
-    ```
-    fig, ax = plt.subplots()  # Always create figure and axis objects
-    x = np.linspace(-5, 5, 100)
-    y = x**2
-    ax.plot(x, y)
-    ax.grid(True)
-    ax.set_title('Sample Parabola')
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    fig.show()
-    ```"""
-    if "show" in query:
-        return "Figure displayed"
-    else:
-        return "Error in `query` for `display_figure`: you must show your figure using `.show()`"
-
-
 python_repl = PythonREPL()
 
 
@@ -91,4 +64,4 @@ def python_calculator(program: str):
         return str(e)
 
 
-tutor_tools = [text_student, display_figure, python_calculator, execute_python]
+tutor_tools = [python_calculator, execute_python]
