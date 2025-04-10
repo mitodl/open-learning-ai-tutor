@@ -121,3 +121,27 @@ def get_assessment_prompt(problem, problem_set, assessment_history, new_messages
         new_messages_text += ' Student: "' + message.content + '"'
     prompt.append(HumanMessage(content=new_messages_text))
     return prompt
+
+
+def get_tutor_prompt(
+    problem,
+    problem_set,
+    chat_history,
+    intent,
+):
+    """
+    Get the prompt for the AI tutor based on the problem, assessment history, and chat history.
+
+    """
+    problem_prompt = get_problem_prompt(problem, problem_set)
+    intent_prompt = get_intent_prompt(intent)
+
+    # Update chat history with problem prompt
+    if chat_history and isinstance(chat_history[0], SystemMessage):
+        chat_history[0] = SystemMessage(content=problem_prompt)
+    else:
+        chat_history.insert(0, SystemMessage(content=problem_prompt))
+
+    chat_history.append(SystemMessage(content=intent_prompt))
+
+    return chat_history

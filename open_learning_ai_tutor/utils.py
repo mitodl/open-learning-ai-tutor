@@ -1,13 +1,32 @@
 import json
 from open_learning_ai_tutor.constants import Intent
+from langchain_core.messages import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+    FunctionMessage,
+    ChatMessage,
+)
+
+
+def tutor_output_to_json(chat_history, intent_history, assessment_history, metadata):
+    json_output = {
+        "chat_history": messages_to_json(chat_history),
+        "intent_history": intent_list_to_json(intent_history),
+        "assessment_history": messages_to_json(assessment_history),
+        "metadata": metadata,
+    }
+    json_output = json.dumps(json_output)
+    return json_output
 
 
 def json_to_intent_list(json_str):
     """Convert a JSON string to a list of Intent enums."""
     intent_lists = json.loads(json_str)
     return [
-        [Intent[name] for name in intent_names if name in Intent.__members__]
-        for intent_names in intent_lists
+        [Intent[name] for name in intent_list_members if name in Intent.__members__]
+        for intent_list_members in intent_lists
     ]
 
 
@@ -17,34 +36,6 @@ def intent_list_to_json(intent_lists):
         [intent.name for intent in intent_list] for intent_list in intent_lists
     ]
     return json.dumps(intent_names)
-
-
-def print_logs(log):
-    print("--------\n")
-    for msg in log:
-        print(msg)
-    print("--------\n")
-
-
-def generate_messages(student_messages, tutor_messages, init_message, role):
-    if role == "student":
-        roles = ["user", "assistant"]
-    else:
-        roles = ["assistant", "user"]
-
-    messages = [{"role": "system", "content": init_message}]
-
-    for i in range(min(len(student_messages), len(tutor_messages))):
-
-        messages.append({"role": roles[0], "content": tutor_messages[i]})
-        messages.append({"role": roles[1], "content": student_messages[i]})
-
-    if role == "student" and len(student_messages) < len(tutor_messages):
-        messages.append({"role": "user", "content": tutor_messages[-1]})
-    elif role == "tutor" and len(student_messages) > len(tutor_messages):
-        messages.append({"role": "user", "content": student_messages[-1]})
-
-    return messages
 
 
 def messages_to_json(messages):
@@ -91,14 +82,6 @@ def json_to_messages(json_messages):
     Returns:
         list: List of LangChain message objects
     """
-    from langchain_core.messages import (
-        AIMessage,
-        HumanMessage,
-        SystemMessage,
-        ToolMessage,
-        FunctionMessage,
-        ChatMessage,
-    )
 
     message_type_map = {
         "AIMessage": AIMessage,
@@ -150,71 +133,5 @@ def json_to_messages(json_messages):
     return messages
 
 
-# def test_message_conversions():
-#     """
-#     Test the message conversion functions by converting LangChain messages to JSON
-#     and back, verifying that the result matches the original input.
-#     """
-#     from langchain_core.messages import (
-#         AIMessage,
-#         HumanMessage,
-#         SystemMessage,
-#         ToolMessage,
-#         FunctionMessage,
-#         ChatMessage
-#     )
-
-#     # Create test messages with various features
-#     test_messages = [
-#         HumanMessage(content="Hello!"),
-#         AIMessage(
-#             content="Hi there!",
-#             additional_kwargs={"metadata": {"confidence": 0.9}}
-#         ),
-#         SystemMessage(content="You are a helpful assistant"),
-#         ToolMessage(
-#             content="42",
-#             tool_call_id="call_123",
-#             name="calculator",
-#             additional_kwargs={"tool_metadata": {"precision": "high"}}
-#         ),
-#         FunctionMessage(
-#             content="Function result",
-#             name="get_weather",
-#             additional_kwargs={"temperature": 72}
-#         ),
-#         ChatMessage(
-#             content="General chat message",
-#             role="user",
-#             additional_kwargs={"custom_field": "value"}
-#         )
-#     ]
-
-#     # Convert to JSON
-#     json_messages = messages_to_json(test_messages)
-
-#     # Convert back to LangChain messages
-#     converted_messages = json_to_messages(json_messages)
-
-#     # Verify the conversion
-#     assert len(test_messages) == len(converted_messages), "Message count mismatch"
-
-#     for original, converted in zip(test_messages, converted_messages):
-#         # Check type
-#         assert type(original) == type(converted), f"Type mismatch: {type(original)} != {type(converted)}"
-
-#         # Check content
-#         assert original.content == converted.content, f"Content mismatch: {original.content} != {converted.content}"
-
-#         # Check name if exists
-#         if hasattr(original, 'name'):
-#             assert original.name == converted.name, f"Name mismatch: {original.name} != {converted.name}"
-
-#         # Check additional kwargs
-#         assert original.additional_kwargs == converted.additional_kwargs, \
-#             f"Additional kwargs mismatch: {original.additional_kwargs} != {converted.additional_kwargs}"
-
-#     print("All tests passed successfully!")
-#     return True
-
-# test_message_conversions()
+def filter_out_system_messages(messages):
+    return [msg for msg in messages if not isinstance(msg, SystemMessage)]
