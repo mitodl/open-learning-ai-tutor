@@ -10,7 +10,8 @@ from langchain_core.messages import (
 )
 
 
-def tutor_output_to_json(chat_history, intent_history, assessment_history, metadata):
+def tutor_output_to_json(chat_history, intent_history, assessment_history, metadata=None):
+    metadata = metadata or {}
     json_output = {
         "chat_history": messages_to_json(chat_history),
         "intent_history": intent_list_to_json(intent_history),

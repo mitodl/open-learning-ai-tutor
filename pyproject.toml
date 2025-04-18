@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "open-learning-ai-tutor"
-version = "0.0.6"
+version = "0.0.7"
 description = "AI powered tutor"
 authors = ["MIT ODL"]
 readme = "README.md"

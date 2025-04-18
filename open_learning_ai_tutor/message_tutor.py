@@ -30,7 +30,7 @@ def message_tutor(
         tools: Tools available to the tutor.
     Returns
         tuple: A tuple containing the new chat history, intent history,
-               assessment history, and metadata.
+               and assessment history
     """
     tutor = Tutor(
         client,
@@ -61,5 +61,4 @@ def message_tutor(
     ]  # [1:] because we don't include system prompt
     new_intent_history = intent_history + [new_intent]
 
-    metadata = {"tutor_model": client.model_name}
-    return new_history, new_intent_history, new_assessment_history, metadata
+    return new_history, new_intent_history, new_assessment_history
