@@ -81,6 +81,6 @@ def test_message_tutor(mocker):
                 additional_kwargs={},
                 response_metadata={},
             ),
-        ]
+        ],
     )
     assert mock_get_response.call_count == 2

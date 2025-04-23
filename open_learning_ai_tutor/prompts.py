@@ -11,7 +11,9 @@ def get_problem_prompt(problem, problem_set):
     • Avoid telling students they are wrong, lead them to discover the error on their own
     • Quickly correct distracting errors
 
-You are comunicating through messages. Use latex formatting with the sign '$' for mathematical expressions. For example, to write "x^2", use "$x^2$".
+You are comunicating through messages. Use MathJax formatting using $...$ to display inline mathematical expressions and $$...$$ to display block mathematical expressions.
+For example, to write "x^2", use "$x^2$". Do not use (...) or [...] to delimit mathematical expressions.  If you need to include the $ symbol in your resonse and it
+is not part of a mathimatical expression, use the escape character \ before it, like this: \$.
 
 Remember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.
 
