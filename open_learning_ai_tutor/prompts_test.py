@@ -31,6 +31,14 @@ class NonDjangoCache:
         self.cache[key] = value
 
 
+class DjangoCache(NonDjangoCache):
+    """Mock cache class to simulate django cache behavior."""
+
+    def set(self, key, value, timeout):  #
+        self.cache[key] = f"{value} (cached for {timeout} seconds)"
+        os.environ["CACHED_TEST_PROMPT"] = value
+
+
 def fake_cache_function():
     """Cache function returning an empty dict"""
     return {}
@@ -38,10 +46,7 @@ def fake_cache_function():
 
 def real_cache_function_with_set():
     """Cache function returning a dict with the prompt"""
-    return Mock(
-        get=Mock(return_value="My cached prompt"),
-        set=Mock(),
-    )
+    return DjangoCache()
 
 
 def real_cache_function_without_set():
@@ -204,7 +209,7 @@ def test_langsmith_prompt_template_set_get(mocker, mock_langsmith_environment):
 
 def test_get_system_prompt_no_langsmith(mocker) -> str:
     """
-    System prompt should return default prompt if no langsmith API key is set.
+    get_system_prompt should return default prompt if no langsmith API key is set.
     """
     os.environ["LANGSMITH_API_KEY"] = ""
     assert get_system_prompt(
@@ -216,7 +221,7 @@ def test_get_system_prompt_no_langsmith(mocker) -> str:
 
 def test_get_system_prompt_with_langsmith_no_cache(mocker, mock_langsmith_environment) -> str:
     """
-    System prompt should return langsmith prompt if langsmith API key is set.
+    get_system_prompt should return langsmith prompt if langsmith API key is set.
     """
     mock_prompt = "This is the langsmith assessment prompt"
     mocker.patch(
@@ -232,7 +237,7 @@ def test_get_system_prompt_with_langsmith_no_cache(mocker, mock_langsmith_enviro
 
 def test_get_system_prompt_with_langsmith_with_cache(mocker, mock_langsmith_environment) -> str:
     """
-    System prompt should return cached_prompt if set.
+    get_system_prompt should return cached_prompt if set.
     """
     assert get_system_prompt(
         "tutor_initial_assessment", 
@@ -243,7 +248,7 @@ def test_get_system_prompt_with_langsmith_with_cache(mocker, mock_langsmith_envi
 
 def test_get_system_prompt_with_langsmith_set_cache(mocker, mock_langsmith_environment) -> str:
     """
-    System prompt should return cached_prompt if set.
+    get_system_prompt should cache a langsmith prompt.
     """
     langsmith_prompt = "My langsmith prompt"
     mocker.patch(
@@ -254,7 +259,8 @@ def test_get_system_prompt_with_langsmith_set_cache(mocker, mock_langsmith_envir
         "tutor_initial_assessment", 
         TUTOR_PROMPT_MAPPING, 
         real_cache_function_with_set
-    ) == "My cached prompt"
+    ) == langsmith_prompt
+    assert os.environ.get("CACHED_TEST_PROMPT") == langsmith_prompt
 
 
 def test_get_system_prompt_with_langsmith_set_cache_error(mocker, mock_langsmith_environment) -> str:
