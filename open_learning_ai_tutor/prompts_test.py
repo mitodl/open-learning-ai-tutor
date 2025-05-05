@@ -1,14 +1,62 @@
+import os
+from unittest.mock import Mock
 import pytest
 from open_learning_ai_tutor.constants import Intent
 from open_learning_ai_tutor.prompts import (
+    ASSESSMENT_PROMPT_TEMPLATE,
+    TUTOR_PROMPT_MAPPING,
     get_intent_prompt,
+    get_system_prompt,
     intent_mapping,
     get_assessment_prompt,
     get_assessment_initial_prompt,
     get_tutor_prompt,
+    langsmith_prompt_template,
+    prompt_env_key,
 )
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langsmith.utils import LangSmithNotFoundError
 
+
+class NonDjangoCache:
+    """Mock cache class to simulate non-django cache behavior."""
+    def __init__(self):
+        self.cache = {}
+
+    def get(self, key):
+        return self.cache.get(key)
+
+    def set(self, key, value):
+        self.cache[key] = value
+
+
+def fake_cache_function():
+    """Cache function returning an empty dict"""
+    return {}
+
+
+def real_cache_function_with_set():
+    """Cache function returning a dict with the prompt"""
+    return Mock(
+        get=Mock(return_value="My cached prompt"),
+        set=Mock(),
+    )
+
+
+def real_cache_function_without_set():
+    """Cache function returning a dict with the prompt"""
+    return Mock(
+        get=Mock(return_value="My cached prompt"),
+    )
+
+
+@pytest.fixture
+def mock_langsmith_environment(mocker):
+    """Fixture to set up the environment for testing."""
+    os.environ["ENVIRONMENT"] = "dev"
+    os.environ["LANGSMITH_API_KEY"] = "test_api_key"
+    
 
 @pytest.mark.parametrize(
     ("intents", "message"),
@@ -104,3 +152,129 @@ def test_get_tutor_prompt():
     ]
 
     assert prompt == expected_prompt
+
+
+@pytest.mark.parametrize("environment", ["dev", "rc", "prod"])
+@pytest.mark.parametrize(
+    ("prompt_name", "expected_prompt_name"), (
+        ("tutor_my+Prompt", "tutor_myprompt"), 
+        ("my.Prompt.NAME", "mypromptname"), 
+        ("my-promPT_Name", "my-prompt_name")
+    )
+)
+def test_prompt_env_key(environment, prompt_name, expected_prompt_name):
+    """Test that the prompt_env_key function returns the correct key."""
+    os.environ["ENVIRONMENT"] = environment
+    assert prompt_env_key(prompt_name) == f"{expected_prompt_name}_{environment}"
+
+
+def test_langsmith_prompt_template_get(mocker, mock_langsmith_environment):
+    """Test that the langsmith prompt template is retrieved correctly."""
+    mock_prompt = "This is a test prompt"
+    mock_key = "tutor_my+Prompt"
+    mock_pull = mocker.patch(
+        "open_learning_ai_tutor.prompts.LangsmithClient.pull_prompt", 
+        return_value=ChatPromptTemplate([("system", mock_prompt)])
+    )
+    assert langsmith_prompt_template(
+        mock_key, {}
+    ).messages[0].prompt.template == mock_prompt
+    mock_pull.assert_called_once_with("tutor_myprompt_dev")
+
+def test_langsmith_prompt_template_set_get(mocker, mock_langsmith_environment):
+    """Test that the langsmith prompt template is set and retrieved correctly."""
+    mock_prompt = "This is another test prompt"
+    mock_key = "tutor_my-Prompt"
+    mapping = {
+        mock_key: mock_prompt,
+    }
+    mock_pull = mocker.patch(
+        "open_learning_ai_tutor.prompts.LangsmithClient.pull_prompt", 
+        side_effect=LangSmithNotFoundError
+    )
+    mock_push = mocker.patch("open_learning_ai_tutor.prompts.LangsmithClient.push_prompt")
+    system_prompt = langsmith_prompt_template(mock_key, mapping)
+    mock_pull.assert_called_once_with("tutor_my-prompt_dev")
+    mock_push.assert_called_once_with(
+        "tutor_my-prompt_dev", 
+        object=ChatPromptTemplate([("system", mapping[mock_key])])
+    )
+    assert system_prompt.messages[0].prompt.template == mock_prompt
+
+
+def test_get_system_prompt_no_langsmith(mocker) -> str:
+    """
+    System prompt should return default prompt if no langsmith API key is set.
+    """
+    os.environ["LANGSMITH_API_KEY"] = ""
+    assert get_system_prompt(
+        "tutor_initial_assessment", 
+        TUTOR_PROMPT_MAPPING, 
+        fake_cache_function
+    ) == ASSESSMENT_PROMPT_TEMPLATE
+
+
+def test_get_system_prompt_with_langsmith_no_cache(mocker, mock_langsmith_environment) -> str:
+    """
+    System prompt should return langsmith prompt if langsmith API key is set.
+    """
+    mock_prompt = "This is the langsmith assessment prompt"
+    mocker.patch(
+        "open_learning_ai_tutor.prompts.LangsmithClient.pull_prompt", 
+        return_value=ChatPromptTemplate([("system", mock_prompt)])
+    )
+    assert get_system_prompt(
+        "tutor_initial_assessment", 
+        TUTOR_PROMPT_MAPPING, 
+        fake_cache_function
+    ) == mock_prompt
+
+
+def test_get_system_prompt_with_langsmith_with_cache(mocker, mock_langsmith_environment) -> str:
+    """
+    System prompt should return cached_prompt if set.
+    """
+    assert get_system_prompt(
+        "tutor_initial_assessment", 
+        TUTOR_PROMPT_MAPPING, 
+        real_cache_function_without_set
+    ) == "My cached prompt"
+
+
+def test_get_system_prompt_with_langsmith_set_cache(mocker, mock_langsmith_environment) -> str:
+    """
+    System prompt should return cached_prompt if set.
+    """
+    langsmith_prompt = "My langsmith prompt"
+    mocker.patch(
+        "open_learning_ai_tutor.prompts.langsmith_prompt_template", 
+        return_value=ChatPromptTemplate([("system", langsmith_prompt)])
+    )
+    assert get_system_prompt(
+        "tutor_initial_assessment", 
+        TUTOR_PROMPT_MAPPING, 
+        real_cache_function_with_set
+    ) == "My cached prompt"
+
+
+def test_get_system_prompt_with_langsmith_set_cache_error(mocker, mock_langsmith_environment) -> str:
+    """
+    System prompt should return langsmith promot if cache raises an error.
+    """
+    def get_my_cache():
+        return NonDjangoCache()
+    mock_log = mocker.patch("open_learning_ai_tutor.prompts.logger.exception")
+    langsmith_prompt = "My original prompt"
+    mocker.patch(
+        "open_learning_ai_tutor.prompts.langsmith_prompt_template", 
+        return_value=ChatPromptTemplate([("system", langsmith_prompt)])
+    )
+    assert get_system_prompt(
+        "tutor_initial_assessment", 
+        TUTOR_PROMPT_MAPPING, 
+        get_my_cache
+    ) == langsmith_prompt
+    mock_log.assert_called_once_with(
+        "Prompt cache could not be set for cache of class %s", 
+        NonDjangoCache.__name__
+    )
