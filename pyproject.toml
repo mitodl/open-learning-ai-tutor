@@ -12,6 +12,7 @@ langgraph = "^0.3.10"
 langchain-core = "^0.3.45"
 langchain-experimental = "^0.3.4"
 e2b-code-interpreter = "^1.1.0"
+langsmith = "0.3.32"
 
 
 [tool.poetry.group.dev.dependencies]
