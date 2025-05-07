@@ -26,6 +26,24 @@ jobs:
       with:
         name: python-package-distributions
         path: dist/
+  bump-version:
+    name: Bump package version
+    if: "!contains(github.event.head_commit.message, 'Bump version')"
+    runs-on: ubuntu-20.04
+    steps:
+    - name: actions/checkout
+      uses: actions/checkout@v2
+      with:
+          persist-credentials: false
+    - name: current_version
+      run: echo "current_version=$(grep '# version' version.md | cut -d ' ' -f3)" >> $GITHUB_ENV
+    - name: FragileTech/bump-version
+      uses: FragileTech/bump-version@main
+      with:
+        current_version: "${{ env.current_version }}"
+        files: version.md
+        commit_name: MIT Online Learning
+        commit_email: ol-devops@mit.edu
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
