@@ -45,6 +45,8 @@ jobs:
         files: version.md
         commit_name: MIT Online Learning
         commit_email: ol-devops@mit.edu
+        login: odlbot
+        token: "${{ secrets.GH_TOKEN }}"
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
