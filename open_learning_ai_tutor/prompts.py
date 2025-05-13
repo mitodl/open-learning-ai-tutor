@@ -210,7 +210,7 @@ def prompt_env_key(prompt_name: str) -> str:
     Returns:
         The cache key for the given prompt name
     """
-    key = f"{prompt_name}_{os.environ.get('ENVIRONMENT', 'dev')}"
+    key = f"{prompt_name}_{os.environ.get('MITOL_ENVIRONMENT', 'dev')}"
     return re.sub(r'[^a-zA-Z0-9\-_]', '', key).lower()
 
 def langsmith_prompt_template(prompt_name: str, mapping: dict) -> ChatPromptTemplate:
