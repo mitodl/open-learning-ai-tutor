@@ -59,7 +59,7 @@ def real_cache_function_without_set():
 @pytest.fixture
 def mock_langsmith_environment(mocker):
     """Fixture to set up the environment for testing."""
-    os.environ["ENVIRONMENT"] = "dev"
+    os.environ["MITOL_ENVIRONMENT"] = "rc"
     os.environ["LANGSMITH_API_KEY"] = "test_api_key"
     
 
@@ -169,7 +169,7 @@ def test_get_tutor_prompt():
 )
 def test_prompt_env_key(environment, prompt_name, expected_prompt_name):
     """Test that the prompt_env_key function returns the correct key."""
-    os.environ["ENVIRONMENT"] = environment
+    os.environ["MITOL_ENVIRONMENT"] = environment
     assert prompt_env_key(prompt_name) == f"{expected_prompt_name}_{environment}"
 
 
