@@ -59,7 +59,7 @@ def real_cache_function_without_set():
 @pytest.fixture
 def mock_langsmith_environment(mocker):
     """Fixture to set up the environment for testing."""
-    os.environ["ENVIRONMENT"] = "dev"
+    os.environ["MITOL_ENVIRONMENT"] = "rc"
     os.environ["LANGSMITH_API_KEY"] = "test_api_key"
     
 
@@ -169,7 +169,7 @@ def test_get_tutor_prompt():
 )
 def test_prompt_env_key(environment, prompt_name, expected_prompt_name):
     """Test that the prompt_env_key function returns the correct key."""
-    os.environ["ENVIRONMENT"] = environment
+    os.environ["MITOL_ENVIRONMENT"] = environment
     assert prompt_env_key(prompt_name) == f"{expected_prompt_name}_{environment}"
 
 
@@ -184,7 +184,7 @@ def test_langsmith_prompt_template_get(mocker, mock_langsmith_environment):
     assert langsmith_prompt_template(
         mock_key, {}
     ).messages[0].prompt.template == mock_prompt
-    mock_pull.assert_called_once_with("tutor_myprompt_dev")
+    mock_pull.assert_called_once_with("tutor_myprompt_rc")
 
 def test_langsmith_prompt_template_set_get(mocker, mock_langsmith_environment):
     """Test that the langsmith prompt template is set and retrieved correctly."""
@@ -199,9 +199,9 @@ def test_langsmith_prompt_template_set_get(mocker, mock_langsmith_environment):
     )
     mock_push = mocker.patch("open_learning_ai_tutor.prompts.LangsmithClient.push_prompt")
     system_prompt = langsmith_prompt_template(mock_key, mapping)
-    mock_pull.assert_called_once_with("tutor_my-prompt_dev")
+    mock_pull.assert_called_once_with("tutor_my-prompt_rc")
     mock_push.assert_called_once_with(
-        "tutor_my-prompt_dev", 
+        "tutor_my-prompt_rc", 
         object=ChatPromptTemplate([("system", mapping[mock_key])])
     )
     assert system_prompt.messages[0].prompt.template == mock_prompt
