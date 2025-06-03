@@ -54,7 +54,7 @@ def message_tutor(
         new_intent,
     )
 
-    response = tutor.get_response(prompt)
+    response_generator = tutor.get_response(prompt)
     new_history = filter_out_system_messages(response["messages"])
     new_assessment_history = new_assessment_history[
         1:

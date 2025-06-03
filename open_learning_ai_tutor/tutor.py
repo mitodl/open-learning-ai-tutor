@@ -48,4 +48,4 @@ class Tutor:
         self.app = app
 
     def get_response(self, prompt):
-        return self.app.invoke({"messages": prompt})
+        return self.app.astream({"messages": prompt})
