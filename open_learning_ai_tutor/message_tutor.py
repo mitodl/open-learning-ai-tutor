@@ -29,8 +29,8 @@ def message_tutor(
         intent_history (list):  All intents assigned based on the student messages in the chat history.
         tools: Tools available to the tutor.
     Returns
-        tuple: A tuple containing the new chat history, intent history,
-               and assessment history
+        tuple: A tuple containing a generator that streams the response ,
+            and the new intent history and assessment history
     """
     tutor = Tutor(
         client,
@@ -53,12 +53,14 @@ def message_tutor(
         chat_history,
         new_intent,
     )
-
-    response = tutor.get_response(prompt)
-    new_history = filter_out_system_messages(response["messages"])
     new_assessment_history = new_assessment_history[
         1:
     ]  # [1:] because we don't include system prompt
+
     new_intent_history = intent_history + [new_intent]
 
-    return new_history, new_intent_history, new_assessment_history
+    return (
+        tutor.get_streaming_response(prompt),
+        new_intent_history,
+        new_assessment_history,
+    )
