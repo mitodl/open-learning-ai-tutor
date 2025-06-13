@@ -15,13 +15,7 @@ def test_message_tutor(mocker):
         ]
     }
 
-    tutor_response = {
-        "messages": [
-            SystemMessage(content="tutor prompt"),
-            HumanMessage(content="what should i try first"),
-            AIMessage(content="Let's start by thinking about the problem."),
-        ]
-    }
+    tutor_response = "a generator with tutor response"
 
     # Mock the Tutor class
     mock_tutor = mocker.patch("open_learning_ai_tutor.message_tutor.Tutor")
@@ -29,9 +23,14 @@ def test_message_tutor(mocker):
 
     # Configure the async mock response
     mock_get_response = mocker.Mock()
-    mock_get_response.side_effect = [assessment_response, tutor_response]
-    mock_tutor_instance.get_response = mock_get_response
+    mock_get_response.return_value = assessment_response
 
+    mock_streaming_response = mocker.Mock()
+    mock_streaming_response.return_value = tutor_response
+
+    mock_tutor_instance.get_response = mock_get_response
+    mock_tutor_instance.get_streaming_response = mock_streaming_response
+    
     problem = "problem"
     problem_set = "problem_set"
     client = mocker.Mock()
@@ -55,18 +54,7 @@ def test_message_tutor(mocker):
 
     # Assertions
     assert response == (
-        [
-            HumanMessage(
-                content="what should i try first",
-                additional_kwargs={},
-                response_metadata={},
-            ),
-            AIMessage(
-                content="Let's start by thinking about the problem.",
-                additional_kwargs={},
-                response_metadata={},
-            ),
-        ],
+        tutor_response,
         [
             [Intent.P_HYPOTHESIS],
         ],
@@ -83,4 +71,5 @@ def test_message_tutor(mocker):
             ),
         ],
     )
-    assert mock_get_response.call_count == 2
+    assert mock_get_response.call_count == 1
+    assert mock_streaming_response.call_count == 1

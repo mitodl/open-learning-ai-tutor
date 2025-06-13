@@ -48,4 +48,7 @@ class Tutor:
         self.app = app
 
     def get_response(self, prompt):
-        return self.app.astream({"messages": prompt})
+        return self.app.invoke({"messages": prompt})
+   
+    def get_streaming_response(self, prompt):
+        return self.app.astream({"messages": prompt}, stream_mode=["messages", "values"])
