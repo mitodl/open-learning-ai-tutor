@@ -28,13 +28,16 @@ AssessementPrompts = {
     Assessment.ASKING_FOR_CONCEPTS.value: "The student is asking about concepts or information related to the material covered by the problem, or is continuing such a discussion.",
 }
 
-assessment_prompt_key_mapping = {f"{assess.value}": f"tutor_assessment_{assess.name}" for assess in Assessment}
-
-assessment_prompt_mapping = {
-    f"tutor_assessment_{assess.name}": AssessementPrompts[assess.value] for assess in Assessment
+assessment_prompt_key_mapping = {
+    f"{assess.value}": f"tutor_assessment_{assess.name}" for assess in Assessment
 }
 
-PROBLEM_PROMPT_TEMPLATE="""Act as an experienced tutor. You are comunicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:
+assessment_prompt_mapping = {
+    f"tutor_assessment_{assess.name}": AssessementPrompts[assess.value]
+    for assess in Assessment
+}
+
+PROBLEM_PROMPT_TEMPLATE = """Act as an experienced tutor. You are comunicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:
     • Promote a sense of challenge, curiosity, feeling of control
     • Prevent the student from becoming frustrated
     • Intervene very indirectly: never give the answer but guide the student to make them find it on their own
@@ -62,7 +65,7 @@ Some information required to solve the problem may be in other parts of the prob
 Provide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student's progresses and right answers. """
 
 
-ASSESSMENT_PROMPT_TEMPLATE="""A student and their tutor are working on a math problem:
+ASSESSMENT_PROMPT_TEMPLATE = """A student and their tutor are working on a math problem:
 *Problem Statement*:
 {problem}
 
@@ -96,9 +99,7 @@ Analyze the last student's utterance.
 
 def get_problem_prompt(problem, problem_set):
     template = get_system_prompt("tutor_problem", TUTOR_PROMPT_MAPPING, get_cache)
-    return template.format(
-        problem=problem, problem_set=problem_set
-    )
+    return template.format(problem=problem, problem_set=problem_set)
 
 
 intent_mapping = {
@@ -124,7 +125,10 @@ intent_mapping = {
     Intent.G_REFUSE: "The student is asking something irrelevant to the problem. Explain politely that you can't help them on topics other than the problem. DO NOT ANSWER THEIR REQUEST\n",
 }
 
-intent_prompt_mapping = {f"tutor_intent_{intent.name}": intent_mapping[intent] for intent in Intent}
+intent_prompt_mapping = {
+    f"tutor_intent_{intent.name}": intent_mapping[intent] for intent in Intent
+}
+
 
 def get_intent_prompt(intents):
     intent_prompt = ""
@@ -132,16 +136,20 @@ def get_intent_prompt(intents):
     if Intent.G_REFUSE in intents:
         intents = [Intent.G_REFUSE]
     for intent in intents:
-        intent_prompt += get_system_prompt(f"tutor_intent_{intent.name}", intent_prompt_mapping, get_cache)
+        intent_prompt += get_system_prompt(
+            f"tutor_intent_{intent.name}", intent_prompt_mapping, get_cache
+        )
     return intent_prompt
 
 
 def get_assessment_initial_prompt(problem, problem_set):
-    template = get_system_prompt("tutor_initial_assessment", TUTOR_PROMPT_MAPPING, get_cache)
+    template = get_system_prompt(
+        "tutor_initial_assessment", TUTOR_PROMPT_MAPPING, get_cache
+    )
 
     return template.format(
-        problem=problem, 
-        problem_set=problem_set, 
+        problem=problem,
+        problem_set=problem_set,
         assessment_keys=",".join(a.value for a in Assessment),
         assessment_choices="\n".join(
             [
@@ -149,8 +157,10 @@ def get_assessment_initial_prompt(problem, problem_set):
                     assessment_prompt_key_mapping[a.value], 
                     mapping=assessment_prompt_mapping, 
                     cache_func=get_cache
-                )}" for a in Assessment]
-        )
+                )}"
+                for a in Assessment
+            ]
+        ),
     )
 
 
@@ -192,7 +202,7 @@ def get_tutor_prompt(
     return chat_history
 
 
-TUTOR_PROMPT_MAPPING =  {
+TUTOR_PROMPT_MAPPING = {
     "tutor_initial_assessment": ASSESSMENT_PROMPT_TEMPLATE,
     "tutor_problem": PROBLEM_PROMPT_TEMPLATE,
 }
@@ -201,7 +211,7 @@ TUTOR_PROMPT_MAPPING =  {
 def prompt_env_key(prompt_name: str) -> str:
     """
     Get the cache key for the given prompt name and the current environment.
-    Langsmith requires that the key contain only lowercase letters, numbers, 
+    Langsmith requires that the key contain only lowercase letters, numbers,
     dashes, and underscores.
 
     Args:
@@ -211,7 +221,8 @@ def prompt_env_key(prompt_name: str) -> str:
         The cache key for the given prompt name
     """
     key = f"{prompt_name}_{os.environ.get('MITOL_ENVIRONMENT', 'dev')}"
-    return re.sub(r'[^a-zA-Z0-9\-_]', '', key).lower()
+    return re.sub(r"[^a-zA-Z0-9\-_]", "", key).lower()
+
 
 def langsmith_prompt_template(prompt_name: str, mapping: dict) -> ChatPromptTemplate:
     """
@@ -248,28 +259,26 @@ def get_system_prompt(prompt_name: str, mapping: dict, cache_func: callable) -> 
         return mapping.get(prompt_name)
     prompt_template_key = prompt_env_key(prompt_name)
     cache = cache_func()
-    system_prompt = (cache.get(prompt_template_key))
+    system_prompt = cache.get(prompt_template_key)
     if not system_prompt:
         system_prompt = (
-            langsmith_prompt_template(prompt_name, mapping)
-            .messages[0]
-            .prompt.template
+            langsmith_prompt_template(prompt_name, mapping).messages[0].prompt.template
         )
         try:
             if cache and hasattr(cache, "set"):
                 # Assuming this is a django cache w/3 args
                 cache.set(
-                    prompt_template_key, 
-                    system_prompt, 
-                    os.environ.get("AI_PROMPT_CACHE_DURATION", 60 * 60 * 24 * 28)
-            )
+                    prompt_template_key,
+                    system_prompt,
+                    os.environ.get("AI_PROMPT_CACHE_DURATION", 60 * 60 * 24 * 28),
+                )
             elif isinstance(cache, dict):
                 # Assuming this is a dict cache
                 cache[prompt_template_key] = system_prompt
-        except:  #noqa: E722
+        except:  # noqa: E722
             logger.exception(
                 "Prompt cache could not be set for cache of class %s",
-                cache.__class__.__name__
+                cache.__class__.__name__,
             )
     if isinstance(system_prompt, (bytes, bytearray)):
         system_prompt = system_prompt.decode("utf-8")
