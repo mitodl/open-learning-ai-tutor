@@ -52,6 +52,7 @@ jobs:
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
+    needs: build
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment:
