@@ -30,7 +30,7 @@ def test_message_tutor(mocker):
 
     mock_tutor_instance.get_response = mock_get_response
     mock_tutor_instance.get_streaming_response = mock_streaming_response
-    
+
     problem = "problem"
     problem_set = "problem_set"
     client = mocker.Mock()

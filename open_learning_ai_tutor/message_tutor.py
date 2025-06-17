@@ -59,4 +59,8 @@ def message_tutor(
 
     new_intent_history = intent_history + [new_intent]
 
-    return tutor.get_streaming_response(prompt), new_intent_history, new_assessment_history
+    return (
+        tutor.get_streaming_response(prompt),
+        new_intent_history,
+        new_assessment_history,
+    )
