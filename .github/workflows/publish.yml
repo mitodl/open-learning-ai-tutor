@@ -53,8 +53,6 @@ jobs:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
     if: github.event.pull_request.merged == true
-    needs:
-    - bump-version
     runs-on: ubuntu-latest
     environment:
       name: pypi
