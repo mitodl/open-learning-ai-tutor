@@ -1,27 +1,16 @@
 [project]
 name = "open-learning-ai-tutor"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI powered tutor"
-authors = [{ name = "MIT ODL" }]
 requires-python = "~=3.12"
 readme = "README.md"
-dependencies = [
-    "langchain>=0.3.20,<0.4",
-    "langgraph>=0.3.10,<0.4",
-    "langchain-core>=0.3.45,<0.4",
-    "langchain-experimental>=0.3.4,<0.4",
-    "e2b-code-interpreter>=1.1.0,<2",
-    "langsmith==0.3.32",
-]
+dependencies = [ "langchain>=0.3.20,<0.4", "langgraph>=0.3.10,<0.4", "langchain-core>=0.3.45,<0.4", "langchain-experimental>=0.3.4,<0.4", "e2b-code-interpreter>=1.1.0,<2", "langsmith==0.3.32",]
+[[project.authors]]
+name = "MIT ODL"
 
 [dependency-groups]
-dev = [
-    "pytest>=8.3.5,<9",
-    "pytest-mock>=3.14.0,<4",
-    "pytest-asyncio>=0.25.3,<0.26",
-    "black>=25.1.0,<26",
-]
+dev = [ "pytest>=8.3.5,<9", "pytest-mock>=3.14.0,<4", "pytest-asyncio>=0.25.3,<0.26", "black>=25.1.0,<26",]
 
 [build-system]
-requires = ["hatchling"]
+requires = [ "hatchling",]
 build-backend = "hatchling.build"
