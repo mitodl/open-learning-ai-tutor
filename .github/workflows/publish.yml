@@ -6,30 +6,27 @@ on:
     branches:
       - main
 jobs:
-  bump-version:
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: "0"
-
-      - name: Version bumper
-        uses: apowis/pyproject-bump-version@v0.0.1
-        with:
-          file_to_bump: "./pyproject.toml"
-          bump_type: "minor"
-          main_branch: "main"
-          python_version: "3.12"
-      - name: Push bumped version to origin
-        run: |
-          git push origin main
+  # bump-version:
+  #   if: github.event.pull_request.merged == true
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         repository: ${{ github.event.pull_request.head.repo.full_name }}
+  #         ref: ${{ github.event.pull_request.head.ref }}
+  #         fetch-depth: "0"
+  #
+  #     - name: Version bumper
+  #       uses: apowis/pyproject-bump-version@v0.0.1
+  #       with:
+  #         file_to_bump: "./pyproject.toml"
+  #         bump_type: "minor"
+  #         main_branch: "main"
+  #         python_version: "3.12"
 
   build:
     name: Build distribution 📦
-    needs: bump-version
+    # needs: bump-version
     runs-on: ubuntu-latest
 
     steps:
