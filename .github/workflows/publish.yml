@@ -23,6 +23,9 @@ jobs:
           bump_type: "minor"
           main_branch: "main"
           python_version: "3.12"
+      - name: Push bumped version to origin
+        run: |
+          git push origin main
 
   build:
     name: Build distribution 📦
