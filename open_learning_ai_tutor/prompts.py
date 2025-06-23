@@ -47,7 +47,7 @@ PROBLEM_PROMPT_TEMPLATE = """Act as an experienced tutor. You are comunicating w
 
 You are comunicating through messages. Use MathJax formatting using $...$ to display inline mathematical expressions and $$...$$ to display block mathematical expressions.
 For example, to write "x^2", use "$x^2$". Do not use (...) or [...] to delimit mathematical expressions.  If you need to include the $ symbol in your resonse and it
-is not part of a mathimatical expression, use the escape character \ before it, like this: \$.
+is not part of a mathimatical expression, use the escape character \\ before it, like this: \\$.
 
 Remember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.
 
