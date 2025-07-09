@@ -36,11 +36,9 @@ def message_tutor(
         client,
         tools=tools,
     )
-    assessment_prompt = get_assessment_prompt(
-        problem, problem_set, assessment_history, new_messages
-    )
+    assessment_prompt = get_assessment_prompt(problem, problem_set, new_messages)
     assessment_response = tutor.get_response(assessment_prompt)
-    new_assessment_history = assessment_response["messages"]
+    new_assessment_history = assessment_history + assessment_response["messages"][1:]
     if len(new_assessment_history) <= 1:
         raise ValueError("Something went wrong. The assessment history is empty.")
 
@@ -53,9 +51,6 @@ def message_tutor(
         chat_history,
         new_intent,
     )
-    new_assessment_history = new_assessment_history[
-        1:
-    ]  # [1:] because we don't include system prompt
 
     new_intent_history = intent_history + [new_intent]
 

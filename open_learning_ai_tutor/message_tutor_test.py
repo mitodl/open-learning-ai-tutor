@@ -37,7 +37,10 @@ def test_message_tutor(mocker):
     client.model_name = "test_model"
     new_messages = [HumanMessage(content="what should i try first")]
     chat_history = [HumanMessage(content="what should i try first")]
-    assessment_history = []
+    assessment_history = [
+        HumanMessage(content='Student: "i am confused"'),
+        AIMessage(content='{"justification": "test", "selection": "c"}'),
+    ]
     intent_history = []
     tools = []
 
@@ -59,6 +62,16 @@ def test_message_tutor(mocker):
             [Intent.P_HYPOTHESIS],
         ],
         [
+            HumanMessage(
+                content='Student: "i am confused"',
+                additional_kwargs={},
+                response_metadata={},
+            ),
+            AIMessage(
+                content='{"justification": "test", "selection": "c"}',
+                additional_kwargs={},
+                response_metadata={},
+            ),
             HumanMessage(
                 content='Student: "what should i try first"',
                 additional_kwargs={},
