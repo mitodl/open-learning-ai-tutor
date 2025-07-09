@@ -1,6 +1,5 @@
-from open_learning_ai_tutor.tutor import Tutor
+from open_learning_ai_tutor.tutor import Tutor, Assesor
 from open_learning_ai_tutor.prompts import get_assessment_prompt, get_tutor_prompt
-from open_learning_ai_tutor.utils import filter_out_system_messages
 from open_learning_ai_tutor.intent_selector import get_intent
 from open_learning_ai_tutor.constants import Intent
 
@@ -32,15 +31,25 @@ def message_tutor(
         tuple: A tuple containing a generator that streams the response ,
             and the new intent history and assessment history
     """
+
+
+
     tutor = Tutor(
         client,
         tools=tools,
     )
-    assessment_prompt = get_assessment_prompt(
-        problem, problem_set, assessment_history, new_messages
+
+    assesor = Assesor(
+        client,
+        tools=tools,
     )
-    assessment_response = tutor.get_response(assessment_prompt)
-    new_assessment_history = assessment_response["messages"]
+    
+    assessment_prompt = get_assessment_prompt(
+        problem, problem_set, new_messages
+    )
+
+    assessment_response = assesor.get_response(assessment_prompt)
+    new_assessment_history =  assessment_history + assessment_response["messages"] 
     if len(new_assessment_history) <= 1:
         raise ValueError("Something went wrong. The assessment history is empty.")
 

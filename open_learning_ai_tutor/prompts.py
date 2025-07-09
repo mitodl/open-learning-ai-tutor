@@ -164,13 +164,9 @@ def get_assessment_initial_prompt(problem, problem_set):
     )
 
 
-def get_assessment_prompt(problem, problem_set, assessment_history, new_messages):
+def get_assessment_prompt(problem, problem_set, new_messages):
     initial_prompt = get_assessment_initial_prompt(problem, problem_set)
     prompt = [SystemMessage(initial_prompt)]
-
-    if len(assessment_history) > 0:
-        prompt = prompt + assessment_history
-
     new_messages_text = ""
     for message in new_messages:
         new_messages_text += ' Student: "' + message.content + '"'
@@ -296,3 +292,64 @@ def get_cache() -> object:
     module_path, class_name = cache_function.rsplit(".", 1)
     module = import_module(module_path)
     return getattr(module, class_name)()
+
+# The following prompts are similar or identical to the default ones in
+# langmem.short_term.summarization
+PROMPT_SUMMARY_INITIAL = """Create a summary of the conversation above, incorporating
+the previous summary if any.
+If there are any tool results, include the full output of the latest tool message in
+the summary.  
+"""
+PROMPT_SUMMARY_EXISTING = """This is summary of the conversation so far:
+{existing_summary}
+\n\nExtend this summary by taking into account the new messages above.
+If there are any tool results, include the full output of the latest tool message in
+the summary.  You must also retain all "title" and "readable_id" field values from all
+tool messages and any previous summaries in this new summary.
+"""
+PROMPT_SUMMARY_FINAL = """Summary of the conversation so far: {summary}"""
+
+
+SUMMARY_PROMPT_MAPPING = {
+    "summary_initial": PROMPT_SUMMARY_INITIAL,
+    "summary_existing": PROMPT_SUMMARY_EXISTING,
+    "summary_final": PROMPT_SUMMARY_FINAL,
+}
+
+INITIAL_SUMMARY_PROMPT = ChatPromptTemplate.from_messages(
+        [
+            ("placeholder", "{messages}"),
+            (
+                "user",
+                get_system_prompt(
+                    "summary_initial", SUMMARY_PROMPT_MAPPING, get_cache
+                ),
+            ),
+        ]
+    )
+
+EXISTING_SUMMARY_PROMPT = ChatPromptTemplate.from_messages(
+        [
+            ("placeholder", "{messages}"),
+            (
+                "user",
+                get_system_prompt(
+                    "summary_existing", SUMMARY_PROMPT_MAPPING, get_cache
+                ),
+            ),
+        ]
+    )
+
+FINAL_SUMMARY_PROMPT = ChatPromptTemplate.from_messages(
+        [
+            # if exists
+            ("placeholder", "{system_message}"),
+            (
+                "system",
+                get_system_prompt(
+                    "summary_final", SUMMARY_PROMPT_MAPPING, get_cache
+                ),
+            ),
+            ("placeholder", "{messages}"),
+        ]
+    )
