@@ -110,7 +110,7 @@ def test_get_assessment_prompt(mocker):
 
 
 def test_get_tutor_prompt():
-    """Test that the Tutor create_prompt method returns the correct prompt."""
+    """Test that get_tutor_prompt method returns the correct prompt."""
     problem = "problem"
     problem_set = "problem_set"
     chat_history = [
@@ -127,6 +127,54 @@ def test_get_tutor_prompt():
         ),
         HumanMessage(
             content=' Student: "what do i do next?"',
+            additional_kwargs={},
+            response_metadata={},
+        ),
+        SystemMessage(
+            content="Ask the student to start by providing a guess or explain their intuition of the problem.\n",
+            additional_kwargs={},
+            response_metadata={},
+        ),
+    ]
+
+    assert prompt == expected_prompt
+
+
+def test_get_tutor_prompt_with_history():
+    """Test that get_tutor_prompt method returns the correct prompt when there is a chat history."""
+    problem = "problem"
+    problem_set = "problem_set"
+
+    os.environ["AI_TUTOR_MAX_CONVERSATION_MEMORY"] = "1"
+
+    chat_history = [
+        HumanMessage(content="very old message"),
+        SystemMessage(content="very old message"),
+        HumanMessage(content="old message"),
+        SystemMessage(content="old message"),
+        HumanMessage(content='Student: "what do i do next?"'),
+    ]
+    intent = [Intent.P_HYPOTHESIS]
+
+    prompt = get_tutor_prompt(problem, problem_set, chat_history, intent)
+    expected_prompt = [
+        SystemMessage(
+            content='Act as an experienced tutor. You are comunicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:\n    • Promote a sense of challenge, curiosity, feeling of control\n    • Prevent the student from becoming frustrated\n    • Intervene very indirectly: never give the answer but guide the student to make them find it on their own\n    • Minimize the tutor\'s apparent role in the success\n    • Avoid telling students they are wrong, lead them to discover the error on their own\n    • Quickly correct distracting errors\n\nYou are comunicating through messages. Use MathJax formatting using $...$ to display inline mathematical expressions and $$...$$ to display block mathematical expressions.\nFor example, to write "x^2", use "$x^2$". Do not use (...) or [...] to delimit mathematical expressions.  If you need to include the $ symbol in your resonse and it\nis not part of a mathimatical expression, use the escape character \\ before it, like this: \\$.\n\nRemember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.\n\nProvide guidance for the problem:\nproblem\n\nThis problem is in xml format and includes a solution. The problem is part of a problem set.\n\nproblem_set\n\nSome information required to solve the problem may be in other parts of the problem set.\n\n---\n\nProvide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student\'s progresses and right answers. ',
+            additional_kwargs={},
+            response_metadata={},
+        ),
+        HumanMessage(
+            content="old message",
+            additional_kwargs={},
+            response_metadata={},
+        ),
+        SystemMessage(
+            content="old message",
+            additional_kwargs={},
+            response_metadata={},
+        ),
+        HumanMessage(
+            content='Student: "what do i do next?"',
             additional_kwargs={},
             response_metadata={},
         ),
