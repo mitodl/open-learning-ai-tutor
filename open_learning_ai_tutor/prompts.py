@@ -188,11 +188,13 @@ def get_tutor_prompt(
     problem_prompt = get_problem_prompt(problem, problem_set)
     intent_prompt = get_intent_prompt(intent)
 
-    # Update chat history with problem prompt
-    if chat_history and isinstance(chat_history[0], SystemMessage):
-        chat_history[0] = SystemMessage(content=problem_prompt)
-    else:
-        chat_history.insert(0, SystemMessage(content=problem_prompt))
+    max_conversation_memory = os.environ.get("AI_TUTOR_MAX_CONVERSATION_MEMORY", 6)
+    # the maximum messages in the history is max_conversation_memory from the human
+    # and tutor plus the latest human message
+    max_messages = int(max_conversation_memory) * 2 + 1
+    chat_history = chat_history[-max_messages:]
+ 
+    chat_history.insert(0, SystemMessage(content=problem_prompt))
 
     chat_history.append(SystemMessage(content=intent_prompt))
 
