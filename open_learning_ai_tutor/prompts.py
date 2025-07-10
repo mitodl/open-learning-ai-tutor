@@ -193,7 +193,7 @@ def get_tutor_prompt(
     # and tutor plus the latest human message
     max_messages = int(max_conversation_memory) * 2 + 1
     chat_history = chat_history[-max_messages:]
- 
+
     chat_history.insert(0, SystemMessage(content=problem_prompt))
 
     chat_history.append(SystemMessage(content=intent_prompt))
