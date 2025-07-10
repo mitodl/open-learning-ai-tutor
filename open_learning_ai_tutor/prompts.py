@@ -164,12 +164,9 @@ def get_assessment_initial_prompt(problem, problem_set):
     )
 
 
-def get_assessment_prompt(problem, problem_set, assessment_history, new_messages):
+def get_assessment_prompt(problem, problem_set, new_messages):
     initial_prompt = get_assessment_initial_prompt(problem, problem_set)
     prompt = [SystemMessage(initial_prompt)]
-
-    if len(assessment_history) > 0:
-        prompt = prompt + assessment_history
 
     new_messages_text = ""
     for message in new_messages:
