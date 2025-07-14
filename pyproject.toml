@@ -1,6 +1,6 @@
 [project]
 name = "open-learning-ai-tutor"
-version = "0.2.4"
+version = "0.2.5"
 description = "AI powered tutor"
 authors = [{ name = "MIT ODL" }]
 requires-python = "~=3.12"
