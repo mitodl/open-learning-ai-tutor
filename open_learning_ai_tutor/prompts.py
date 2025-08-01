@@ -86,16 +86,19 @@ Analyze the last student's utterance.
 
 
 def get_problem_prompt(problem, problem_set, variant):
-    if variant == 'edx':
+    if variant == "edx":
         problem_statement = EDX_PROBLEM_PROMPT_TEMPLATE.format(
-            problem=problem, problem_set=problem_set)
-    
+            problem=problem, problem_set=problem_set
+        )
+
     else:
         problem_statement = CANVAS_PROBLEM_PROMPT_TEMPLATE.format(
-            problem_set=problem_set)
-    
+            problem_set=problem_set
+        )
+
     template = get_system_prompt("tutor_problem", TUTOR_PROMPT_MAPPING, get_cache)
     return template.format(problem_statement=problem_statement)
+
 
 intent_mapping = {
     Intent.P_LIMITS: "Make the student identify the limits of their reasoning or answer by asking them questions.\n",
@@ -149,6 +152,7 @@ This is a problem set and solution.
 Please focus on the first question in the problem set
 """
 
+
 def get_intent_prompt(intents):
     intent_prompt = ""
 
@@ -163,15 +167,16 @@ def get_intent_prompt(intents):
 
 def get_assessment_initial_prompt(problem, problem_set, variant):
 
-    if variant == 'edx':
+    if variant == "edx":
         problem_statement = EDX_PROBLEM_PROMPT_TEMPLATE.format(
-            problem=problem, problem_set=problem_set)
-    
+            problem=problem, problem_set=problem_set
+        )
+
     else:
         problem_statement = CANVAS_PROBLEM_PROMPT_TEMPLATE.format(
-            problem_set=problem_set)
+            problem_set=problem_set
+        )
 
-        
     template = get_system_prompt(
         "tutor_initial_assessment", TUTOR_PROMPT_MAPPING, get_cache
     )
@@ -203,13 +208,7 @@ def get_assessment_prompt(problem, problem_set, new_messages, variant):
     return prompt
 
 
-def get_tutor_prompt(
-    problem,
-    problem_set,
-    chat_history,
-    intent,
-    variant
-):
+def get_tutor_prompt(problem, problem_set, chat_history, intent, variant):
     """
     Get the prompt for the AI tutor based on the problem, assessment history, and chat history.
 
