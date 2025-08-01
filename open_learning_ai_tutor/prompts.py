@@ -62,7 +62,6 @@ Provide the least amount of scaffolding possible to help the student solve the p
 
 ASSESSMENT_PROMPT_TEMPLATE = """A student and their tutor are working on a math problem:
 
-*Problem Statement*:
 {problem_statement}
 
 The tutor's utterances are preceded by "Tutor:" and the student's utterances are preceded by "Student:".
