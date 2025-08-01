@@ -14,6 +14,7 @@ def message_tutor(
     assessment_history: list,
     intent_history: list,
     tools,
+    variant: str = "edx",
 ):
     """
     Function to handle the message flow between the tutor and the student.
@@ -36,7 +37,9 @@ def message_tutor(
         client,
         tools=tools,
     )
-    assessment_prompt = get_assessment_prompt(problem, problem_set, new_messages)
+    assessment_prompt = get_assessment_prompt(
+        problem, problem_set, new_messages, variant
+    )
     assessment_response = tutor.get_response(assessment_prompt)
     new_assessment_history = assessment_history + assessment_response["messages"][1:]
     if len(new_assessment_history) <= 1:
@@ -45,12 +48,7 @@ def message_tutor(
     previous_intent = intent_history[-1] if intent_history else [Intent.S_STRATEGY]
     new_intent = get_intent(new_assessment_history[-1].content, previous_intent)
 
-    prompt = get_tutor_prompt(
-        problem,
-        problem_set,
-        chat_history,
-        new_intent,
-    )
+    prompt = get_tutor_prompt(problem, problem_set, chat_history, new_intent, variant)
 
     new_intent_history = intent_history + [new_intent]
 

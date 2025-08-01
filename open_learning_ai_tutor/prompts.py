@@ -52,13 +52,8 @@ is not part of a mathimatical expression, use the escape character \\ before it,
 Remember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.
 
 Provide guidance for the problem:
-{problem}
 
-This problem is in xml format and includes a solution. The problem is part of a problem set.
-
-{problem_set}
-
-Some information required to solve the problem may be in other parts of the problem set.
+{problem_statement}
 
 ---
 
@@ -66,16 +61,8 @@ Provide the least amount of scaffolding possible to help the student solve the p
 
 
 ASSESSMENT_PROMPT_TEMPLATE = """A student and their tutor are working on a math problem:
-*Problem Statement*:
-{problem}
 
-This problem is in xml format and includes a solution. The problem is part of a problem set.
-
-*Problem Set*:
-
-{problem_set}
-
-Some information required to solve the problem may be in other parts of the problem set.
+{problem_statement}
 
 The tutor's utterances are preceded by "Tutor:" and the student's utterances are preceded by "Student:".
 
@@ -97,9 +84,19 @@ Analyze the last student's utterance.
 """
 
 
-def get_problem_prompt(problem, problem_set):
+def get_problem_prompt(problem, problem_set, variant):
+    if variant == "edx":
+        problem_statement = EDX_PROBLEM_PROMPT_TEMPLATE.format(
+            problem=problem, problem_set=problem_set
+        )
+
+    else:
+        problem_statement = CANVAS_PROBLEM_PROMPT_TEMPLATE.format(
+            problem_set=problem_set
+        )
+
     template = get_system_prompt("tutor_problem", TUTOR_PROMPT_MAPPING, get_cache)
-    return template.format(problem=problem, problem_set=problem_set)
+    return template.format(problem_statement=problem_statement)
 
 
 intent_mapping = {
@@ -130,6 +127,31 @@ intent_prompt_mapping = {
 }
 
 
+EDX_PROBLEM_PROMPT_TEMPLATE = """
+*Problem Statement*:
+{problem}
+
+This problem is in xml format and includes a solution. The problem is part of a problem set.
+
+*Problem Set*:
+
+{problem_set}
+
+Some information required to solve the problem may be in other parts of the problem set.
+
+"""
+
+CANVAS_PROBLEM_PROMPT_TEMPLATE = """
+ *Problem Statement*:
+
+This is a problem set and solution.
+
+{problem_set}
+
+Please focus on the first question in the problem set
+"""
+
+
 def get_intent_prompt(intents):
     intent_prompt = ""
 
@@ -142,14 +164,24 @@ def get_intent_prompt(intents):
     return intent_prompt
 
 
-def get_assessment_initial_prompt(problem, problem_set):
+def get_assessment_initial_prompt(problem, problem_set, variant):
+
+    if variant == "edx":
+        problem_statement = EDX_PROBLEM_PROMPT_TEMPLATE.format(
+            problem=problem, problem_set=problem_set
+        )
+
+    else:
+        problem_statement = CANVAS_PROBLEM_PROMPT_TEMPLATE.format(
+            problem_set=problem_set
+        )
+
     template = get_system_prompt(
         "tutor_initial_assessment", TUTOR_PROMPT_MAPPING, get_cache
     )
 
     return template.format(
-        problem=problem,
-        problem_set=problem_set,
+        problem_statement=problem_statement,
         assessment_keys=",".join(a.value for a in Assessment),
         assessment_choices="\n".join(
             [
@@ -164,8 +196,8 @@ def get_assessment_initial_prompt(problem, problem_set):
     )
 
 
-def get_assessment_prompt(problem, problem_set, new_messages):
-    initial_prompt = get_assessment_initial_prompt(problem, problem_set)
+def get_assessment_prompt(problem, problem_set, new_messages, variant):
+    initial_prompt = get_assessment_initial_prompt(problem, problem_set, variant)
     prompt = [SystemMessage(initial_prompt)]
 
     new_messages_text = ""
@@ -175,17 +207,13 @@ def get_assessment_prompt(problem, problem_set, new_messages):
     return prompt
 
 
-def get_tutor_prompt(
-    problem,
-    problem_set,
-    chat_history,
-    intent,
-):
+def get_tutor_prompt(problem, problem_set, chat_history, intent, variant):
     """
     Get the prompt for the AI tutor based on the problem, assessment history, and chat history.
 
     """
-    problem_prompt = get_problem_prompt(problem, problem_set)
+
+    problem_prompt = get_problem_prompt(problem, problem_set, variant)
     intent_prompt = get_intent_prompt(intent)
 
     max_conversation_memory = os.environ.get("AI_TUTOR_MAX_CONVERSATION_MEMORY", 6)
