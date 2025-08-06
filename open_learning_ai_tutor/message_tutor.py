@@ -1,4 +1,4 @@
-from open_learning_ai_tutor.tutor import Tutor
+from open_learning_ai_tutor.tutor import Tutor, CanvasTutor
 from open_learning_ai_tutor.prompts import get_assessment_prompt, get_tutor_prompt
 from open_learning_ai_tutor.utils import filter_out_system_messages
 from open_learning_ai_tutor.intent_selector import get_intent
@@ -33,10 +33,16 @@ def message_tutor(
         tuple: A tuple containing a generator that streams the response ,
             and the new intent history and assessment history
     """
-    tutor = Tutor(
-        client,
-        tools=tools,
-    )
+    if variant == "edx":
+        tutor = Tutor(
+            client,
+            tools=tools,
+        )
+    else:
+        tutor = CanvasTutor(
+            client,
+            tools=tools,
+        )
     assessment_prompt = get_assessment_prompt(
         problem, problem_set, new_messages, variant
     )
