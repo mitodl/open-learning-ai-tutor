@@ -60,7 +60,7 @@ Provide guidance for the problem:
 Provide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student's progresses and right answers. """
 
 
-ASSESSMENT_PROMPT_TEMPLATE = """A student and their tutor are working on a math problem:
+ASSESSMENT_PROMPT_TEMPLATE = """A student and their tutor are working on a problem set:
 
 {problem_statement}
 
@@ -142,13 +142,13 @@ Some information required to solve the problem may be in other parts of the prob
 """
 
 CANVAS_PROBLEM_PROMPT_TEMPLATE = """
- *Problem Statement*:
+*Problem Statement*:
 
 This is a problem set and solution.
 
 {problem_set}
 
-Please focus on the first question in the problem set
+The problem set contains multiple individual problems. The student may be asking for help with any of them.
 """
 
 
