@@ -111,7 +111,7 @@ intent_mapping = {
     Intent.S_STRATEGY: "Acknowledge the progress. Encourage and make the student find on their own what is the next step to solve the problem, for example by asking a question. You can also move on to the next part\n",
     Intent.S_HINT: "Give a hint to the student to help them find the next step. Do *not* provide the answer.\n",
     Intent.S_SIMPLIFY: "Consider first a simpler version of the problem.\n",
-    Intent.S_STATE: "State the theorem, definition or programming command the student is asking about. You can use the whiteboard tool to explain. Keep the original exercise in mind. DO NOT REVEAL ANY PART OF THE EXERCISE'S SOLUTION: use other examples.\n",
+    Intent.S_STATE: "State the theorem, definition or programming command the student is asking about. Keep the original exercise in mind. DO NOT REVEAL ANY PART OF THE EXERCISE'S SOLUTION: use other examples.\n",
     Intent.S_CALCULATION: "Correct and perform the numerical computation for the student.\nConsider the student's mistake, if there is one.\n",
     Intent.A_CHALLENGE: "Maintain a sense of challenge.\n",
     Intent.A_CONFIDENCE: "Bolster the student's confidence.\n",
