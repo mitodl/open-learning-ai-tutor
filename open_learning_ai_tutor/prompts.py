@@ -51,12 +51,6 @@ ACTIVE_AB_TESTS = {
     #     "variants": ["S_HINT_V1", "S_HINT_V2"],
     #     "probability": 0.3
     # },
-    # # Assessment variants
-    # "assessment_wrong": {
-    #     "base_assessment": Assessment.WRONG,
-    #     "variants": ["WRONG_V1", "WRONG_V2"],
-    #     "probability": 0.3
-    # },
     # Problem template variants
     "tutor_problem": {
         "variants": ["tutor_problem_v1", "tutor_problem_v2"],
@@ -73,12 +67,6 @@ intent_mapping_variants = {
     # S_HINT variants
     "S_HINT_V1": "Give a hint to the student to help them find the next step. Do *not* provide the answer.\n",
     "S_HINT_V2": "Provide subtle guidance to nudge the student toward the next logical step without revealing the solution.\n",
-}
-
-# Assessment Prompt Variants
-assessment_prompt_variants = {
-    "WRONG_V1": "The student provided an incorrect answer to the problem",
-    "WRONG_V2": "The student's response contains errors or inaccuracies",
 }
 
 # Problem Template Variants
