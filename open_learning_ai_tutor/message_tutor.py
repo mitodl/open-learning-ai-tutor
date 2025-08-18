@@ -29,9 +29,12 @@ def message_tutor(
         assessment_history (list): All assessments for the student messages in the chat history.
         intent_history (list):  All intents assigned based on the student messages in the chat history.
         tools: Tools available to the tutor.
-    Returns
-        tuple: A tuple containing a generator that streams the response ,
-            and the new intent history and assessment history
+        variant (str): Variant type (edx/canvas).
+        
+    Returns:
+        tuple: A tuple containing either:
+        - Single response: (generator, new_intent_history, new_assessment_history)
+        - A/B test response: ({"is_ab_test": True, "responses": [...]}, new_intent_history, new_assessment_history)
     """
     tutor = Tutor(
         client,
@@ -48,12 +51,29 @@ def message_tutor(
     previous_intent = intent_history[-1] if intent_history else [Intent.S_STRATEGY]
     new_intent = get_intent(new_assessment_history[-1].content, previous_intent)
 
-    prompt = get_tutor_prompt(problem, problem_set, chat_history, new_intent, variant)
-
+    prompt_result = get_tutor_prompt(problem, problem_set, chat_history, new_intent, variant)
     new_intent_history = intent_history + [new_intent]
 
-    return (
-        tutor.get_streaming_response(prompt),
-        new_intent_history,
-        new_assessment_history,
-    )
+    if prompt_result["is_ab_test"]:
+        # A/B test: generate responses for both variants
+        control_response = tutor.get_streaming_response(prompt_result["control"])
+        treatment_response = tutor.get_streaming_response(prompt_result["treatment"])
+        
+        return (
+            {
+                "is_ab_test": True,
+                "responses": [
+                    {"variant": "control", "stream": control_response},
+                    {"variant": "treatment", "stream": treatment_response}
+                ]
+            },
+            new_intent_history,
+            new_assessment_history,
+        )
+    else:
+        # Normal single response
+        return (
+            tutor.get_streaming_response(prompt_result["prompt"]),
+            new_intent_history,
+            new_assessment_history,
+        )
