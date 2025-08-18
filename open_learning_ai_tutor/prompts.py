@@ -41,26 +41,26 @@ assessment_prompt_mapping = {
 # A/B Testing Configuration
 ACTIVE_AB_TESTS = {
     # Intent variants - each intent can have multiple variants
-    "intent_p_limits": {
-        "base_intent": Intent.P_LIMITS,
-        "variants": ["P_LIMITS_V1", "P_LIMITS_V2"],
-        "probability": 0.3
-    },
-    "intent_s_hint": {
-        "base_intent": Intent.S_HINT,
-        "variants": ["S_HINT_V1", "S_HINT_V2"],
-        "probability": 0.3
-    },
-    # Assessment variants
-    "assessment_wrong": {
-        "base_assessment": Assessment.WRONG,
-        "variants": ["WRONG_V1", "WRONG_V2"],
-        "probability": 0.3
-    },
+    # "intent_p_limits": {
+    #     "base_intent": Intent.P_LIMITS,
+    #     "variants": ["P_LIMITS_V1", "P_LIMITS_V2"],
+    #     "probability": 0.3
+    # },
+    # "intent_s_hint": {
+    #     "base_intent": Intent.S_HINT,
+    #     "variants": ["S_HINT_V1", "S_HINT_V2"],
+    #     "probability": 0.3
+    # },
+    # # Assessment variants
+    # "assessment_wrong": {
+    #     "base_assessment": Assessment.WRONG,
+    #     "variants": ["WRONG_V1", "WRONG_V2"],
+    #     "probability": 0.3
+    # },
     # Problem template variants
     "tutor_problem": {
         "variants": ["tutor_problem_v1", "tutor_problem_v2"],
-        "probability": 0.3
+        "probability": 1
     }
 }
 
