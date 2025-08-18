@@ -86,9 +86,21 @@ def mock_langsmith_environment(mocker):
         ),
     ],
 )
-def test_intent_prompt(intents, message):
+def test_intent_prompt(mocker, intents, message):
     """Test get_intent"""
-    assert get_intent_prompt(intents) == message
+    # Mock ACTIVE_AB_TESTS to be empty (no A/B tests active)
+    mocker.patch("open_learning_ai_tutor.prompts.ACTIVE_AB_TESTS", {})
+    
+    result = get_intent_prompt(intents)
+    
+    # Check that it returns a dictionary with the expected structure
+    assert isinstance(result, dict)
+    assert "is_ab_test" in result
+    assert "prompt" in result
+    
+    # For this test, we expect no A/B testing (since no A/B tests are active)
+    assert result["is_ab_test"] == False
+    assert result["prompt"] == message
 
 
 @pytest.mark.parametrize("variant", ["canvas", "edx"])
@@ -114,8 +126,11 @@ def test_get_assessment_prompt(mocker, variant):
 
 
 @pytest.mark.parametrize("variant", ["canvas", "edx"])
-def test_get_tutor_prompt(variant):
-    """Test that get_tutor_prompt method returns the correct prompt."""
+def test_get_tutor_prompt(mocker, variant):
+    """Test that get_tutor_prompt method returns the correct prompt with no A/B testing."""
+    # Mock ACTIVE_AB_TESTS to be empty (no A/B tests active)
+    mocker.patch("open_learning_ai_tutor.prompts.ACTIVE_AB_TESTS", {})
+    
     problem = "problem"
     problem_set = "problem_set"
     chat_history = [
@@ -123,7 +138,17 @@ def test_get_tutor_prompt(variant):
     ]
     intent = [Intent.P_HYPOTHESIS]
 
-    prompt = get_tutor_prompt(problem, problem_set, chat_history, intent, variant)
+    prompt_result = get_tutor_prompt(problem, problem_set, chat_history, intent, variant)
+    
+    # Check that it returns a dictionary with the expected structure
+    assert isinstance(prompt_result, dict)
+    assert "is_ab_test" in prompt_result
+    
+    # For this test, we expect no A/B testing (since no A/B tests are active)
+    assert prompt_result["is_ab_test"] == False
+    assert "prompt" in prompt_result
+    
+    prompt = prompt_result["prompt"]
     if variant == "edx":
         problem_message = 'Act as an experienced tutor. You are comunicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:\n    • Promote a sense of challenge, curiosity, feeling of control\n    • Prevent the student from becoming frustrated\n    • Intervene very indirectly: never give the answer but guide the student to make them find it on their own\n    • Minimize the tutor\'s apparent role in the success\n    • Avoid telling students they are wrong, lead them to discover the error on their own\n    • Quickly correct distracting errors\n\nYou are comunicating through messages. Use MathJax formatting using $...$ to display inline mathematical expressions and $$...$$ to display block mathematical expressions.\nFor example, to write "x^2", use "$x^2$". Do not use (...) or [...] to delimit mathematical expressions.  If you need to include the $ symbol in your resonse and it\nis not part of a mathimatical expression, use the escape character \\ before it, like this: \\$.\n\nRemember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.\n\nProvide guidance for the problem:\n\n\n*Problem Statement*:\nproblem\n\nThis problem is in xml format and includes a solution. The problem is part of a problem set.\n\n*Problem Set*:\n\nproblem_set\n\nSome information required to solve the problem may be in other parts of the problem set.\n\n\n\n---\n\nProvide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student\'s progresses and right answers. '
     else:
@@ -150,8 +175,10 @@ def test_get_tutor_prompt(variant):
 
 
 @pytest.mark.parametrize("variant", ["canvas", "edx"])
-def test_get_tutor_prompt_with_history(variant):
+def test_get_tutor_prompt_with_history(mocker, variant):
     """Test that get_tutor_prompt method returns the correct prompt when there is a chat history."""
+    # Mock ACTIVE_AB_TESTS to be empty (no A/B tests active)
+    mocker.patch("open_learning_ai_tutor.prompts.ACTIVE_AB_TESTS", {})
     problem = "problem"
     problem_set = "problem_set"
 
@@ -171,7 +198,17 @@ def test_get_tutor_prompt_with_history(variant):
     else:
         problem_message = 'Act as an experienced tutor. You are comunicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:\n    • Promote a sense of challenge, curiosity, feeling of control\n    • Prevent the student from becoming frustrated\n    • Intervene very indirectly: never give the answer but guide the student to make them find it on their own\n    • Minimize the tutor\'s apparent role in the success\n    • Avoid telling students they are wrong, lead them to discover the error on their own\n    • Quickly correct distracting errors\n\nYou are comunicating through messages. Use MathJax formatting using $...$ to display inline mathematical expressions and $$...$$ to display block mathematical expressions.\nFor example, to write "x^2", use "$x^2$". Do not use (...) or [...] to delimit mathematical expressions.  If you need to include the $ symbol in your resonse and it\nis not part of a mathimatical expression, use the escape character \\ before it, like this: \\$.\n\nRemember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.\n\nProvide guidance for the problem:\n\n\n*Problem Statement*:\n\nThis is a problem set and solution.\n\nproblem_set\n\nThe problem set contains multiple individual problems. The student may be asking for help with any of them.\n\n\n---\n\nProvide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student\'s progresses and right answers. '
 
-    prompt = get_tutor_prompt(problem, problem_set, chat_history, intent, variant)
+    prompt_result = get_tutor_prompt(problem, problem_set, chat_history, intent, variant)
+    
+    # Check that it returns a dictionary with the expected structure
+    assert isinstance(prompt_result, dict)
+    assert "is_ab_test" in prompt_result
+    
+    # For this test, we expect no A/B testing (since no A/B tests are active)
+    assert prompt_result["is_ab_test"] == False
+    assert "prompt" in prompt_result
+    
+    prompt = prompt_result["prompt"]
     expected_prompt = [
         SystemMessage(
             content=problem_message,
@@ -201,6 +238,57 @@ def test_get_tutor_prompt_with_history(variant):
     ]
 
     assert prompt == expected_prompt
+
+
+def test_get_tutor_prompt_ab_testing(mocker):
+    """Test that get_tutor_prompt handles A/B testing correctly when configured."""
+    # Mock the A/B test to be active
+    mock_ab_test = mocker.patch("open_learning_ai_tutor.prompts.get_ab_test_variants")
+    mock_ab_test.return_value = ["tutor_problem_v1", "tutor_problem_v2"]
+    
+    problem = "test problem"
+    problem_set = "test problem set"
+    chat_history = [HumanMessage(content='Student: "help me"')]
+    intent = [Intent.P_HYPOTHESIS]
+    variant = "edx"
+
+    prompt_result = get_tutor_prompt(problem, problem_set, chat_history, intent, variant)
+    
+    # Should return A/B test structure
+    assert isinstance(prompt_result, dict)
+    assert prompt_result["is_ab_test"] == True
+    assert "control" in prompt_result
+    assert "treatment" in prompt_result
+    
+    # Both control and treatment should be lists of messages
+    assert isinstance(prompt_result["control"], list)
+    assert isinstance(prompt_result["treatment"], list)
+    
+    # Both should have the same structure (system message, chat history, intent message)
+    assert len(prompt_result["control"]) == len(prompt_result["treatment"])
+
+
+def test_get_intent_prompt_ab_testing(mocker):
+    """Test that get_intent_prompt handles A/B testing correctly when configured."""
+    # Mock the A/B test to be active for P_LIMITS intent
+    mock_ab_test = mocker.patch("open_learning_ai_tutor.prompts.get_ab_test_variants")
+    mock_ab_test.return_value = ["P_LIMITS_V1", "P_LIMITS_V2"]
+    
+    intents = [Intent.P_LIMITS]
+    
+    result = get_intent_prompt(intents)
+    
+    # Should return A/B test structure
+    assert isinstance(result, dict)
+    assert result["is_ab_test"] == True
+    assert "prompt" in result
+    assert "ab_test_data" in result
+    
+    # Check A/B test data structure
+    ab_data = result["ab_test_data"]
+    assert "P_LIMITS" in ab_data
+    assert "control" in ab_data["P_LIMITS"]
+    assert "treatment" in ab_data["P_LIMITS"]
 
 
 @pytest.mark.parametrize("environment", ["dev", "rc", "prod"])

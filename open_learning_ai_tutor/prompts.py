@@ -143,14 +143,20 @@ def should_ab_test(test_config):
 
 
 def get_ab_test_variants(test_name):
-    """Get variants for a specific A/B test."""
+    """Get A/B test variants if the test is active and configured properly."""
     if test_name not in ACTIVE_AB_TESTS:
         return None
     
     test_config = ACTIVE_AB_TESTS[test_name]
-    if should_ab_test(test_config):
-        return test_config["variants"][:2]
-    return None
+    if not should_ab_test(test_config):
+        return None
+    
+    variants = test_config["variants"]
+    if len(variants) != 2:
+        print(f"Warning: A/B test '{test_name}' requires exactly 2 variants, found {len(variants)}")
+        return None
+        
+    return variants
 
 
 def get_problem_prompt(problem, problem_set, variant):
