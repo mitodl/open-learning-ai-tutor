@@ -15,9 +15,9 @@ async def test_tutor_graph(mocker):
     assert len(edges) == 4
     tool_agent_edge = edges[1]
     for test_condition in (
-        tool_agent_edge.source == "tools",
-        tool_agent_edge.target == "agent",
-        not tool_agent_edge.conditional,
+        tool_agent_edge.source == "agent",
+        tool_agent_edge.target == "__end__",
+        tool_agent_edge.conditional,
     ):
         assert test_condition
     agent_tool_edge = edges[2]
@@ -29,8 +29,8 @@ async def test_tutor_graph(mocker):
         assert test_condition
     agent_end_edge = edges[3]
     for test_condition in (
-        agent_end_edge.source == "agent",
-        agent_end_edge.target == "__end__",
-        agent_end_edge.conditional,
+        agent_end_edge.source == "tools",
+        agent_end_edge.target == "agent",
+        not agent_end_edge.conditional,
     ):
         assert test_condition

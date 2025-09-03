@@ -7,11 +7,11 @@ requires-python = "~=3.12"
 readme = "README.md"
 dependencies = [
     "langchain>=0.3.20,<0.4",
-    "langgraph>=0.3.10,<0.4",
+    "langgraph (>=0.6.6,<0.7.0)",
     "langchain-core>=0.3.45,<0.4",
     "langchain-experimental>=0.3.4,<0.4",
     "e2b-code-interpreter>=1.1.0,<2",
-    "langsmith==0.3.32",
+    "langsmith (>=0.4.21,<0.5.0)",
 ]
 
 [dependency-groups]
