@@ -13,7 +13,7 @@ async def test_tutor_graph(mocker):
 
     edges = graph.edges
     assert len(edges) == 4
-    tool_agent_edge = edges[1]
+    tool_agent_edge = edges[3]
     for test_condition in (
         tool_agent_edge.source == "tools",
         tool_agent_edge.target == "agent",
@@ -27,7 +27,7 @@ async def test_tutor_graph(mocker):
         agent_tool_edge.conditional,
     ):
         assert test_condition
-    agent_end_edge = edges[3]
+    agent_end_edge = edges[1]
     for test_condition in (
         agent_end_edge.source == "agent",
         agent_end_edge.target == "__end__",
