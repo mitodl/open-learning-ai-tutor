@@ -691,7 +691,7 @@ wheels = [
 
 [[package]]
 name = "open-learning-ai-tutor"
-version = "0.2.8"
+version = "0.2.9"
 source = { editable = "." }
 dependencies = [
     { name = "e2b-code-interpreter" },
