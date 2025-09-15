@@ -24,7 +24,7 @@ def test_messages_to_json():
     messages = [
         SystemMessage(content="tutor prompt", id="442dd806-7378-41db-a222-9fe83a0ec75f"),
         HumanMessage(content="what should i try first"),
-        AIMessage(content="Let's start by thinking about the problem.", id="442dd806-7378-41db-a222-9fe83a0ec75h"),
+        AIMessage(content="Let's start by thinking about the problem.", id="442dd806-7378-41db-a222-9fe83a0ec75a"),
     ]
 
     expected_output = [
@@ -41,7 +41,7 @@ def test_messages_to_json():
         {
             "type": "AIMessage",
             "content": "Let's start by thinking about the problem.",
-            "id": "442dd806-7378-41db-a222-9fe83a0ec75h"
+            "id": "442dd806-7378-41db-a222-9fe83a0ec75a"
         },
     ]
     assert messages_to_json(messages) == expected_output
