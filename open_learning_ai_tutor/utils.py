@@ -1,4 +1,6 @@
 import json
+
+from uuid import uuid4
 from open_learning_ai_tutor.constants import Intent
 from langchain_core.messages import (
     AIMessage,
@@ -70,6 +72,11 @@ def messages_to_json(messages):
         if hasattr(message, "role"):
             message_dict["role"] = message.role
 
+        if hasattr(message, "id"):
+            message_dict["id"] = message.id
+        else:
+            message_dict["id"] = str(uuid4())
+
         json_messages.append(message_dict)
 
     return json_messages
@@ -110,12 +117,13 @@ def json_to_messages(json_messages):
         tool_call_id = msg.get("tool_call_id")
         name = msg.get("name")
         role = msg.get("role")
+        message_id = msg.get("id")
 
         # Extract additional kwargs, excluding special fields
         additional_kwargs = {
             k: v
             for k, v in msg.items()
-            if k not in ["type", "content", "name", "tool_call_id", "role"]
+            if k not in ["type", "content", "name", "tool_call_id", "role", "id"]
         }
 
         # Create kwargs dict with only existing values
@@ -128,6 +136,10 @@ def json_to_messages(json_messages):
             kwargs["tool_call_id"] = tool_call_id
         if role:
             kwargs["role"] = role
+        if message_id:
+            kwargs["id"] = message_id
+        else:
+            kwargs["id"] = str(uuid4())
 
         # Create the message object
         message = message_class(**kwargs)
