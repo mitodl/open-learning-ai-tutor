@@ -144,7 +144,8 @@ Some information required to solve the problem may be in other parts of the prob
 CANVAS_PROBLEM_PROMPT_TEMPLATE = """
 *Problem Statement*:
 
-This is a problem set and solution.
+This is a problem set and solution. Both the problem set and solution set may consist of multiple files.
+The following JSON object contains the problem set and solution files and their contents.
 
 {problem_set}
 
