@@ -3,7 +3,7 @@ name = "open-learning-ai-tutor"
 version = "0.2.13"
 description = "AI powered tutor"
 authors = [{ name = "MIT ODL" }]
-requires-python = "~=3.12"
+requires-python = ">=3.12,<3.14"
 readme = "README.md"
 dependencies = [
     "langchain>=1.0.0,<2.0.0",
