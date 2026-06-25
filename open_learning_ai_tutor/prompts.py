@@ -184,16 +184,11 @@ def get_assessment_initial_prompt(problem, problem_set, variant):
     return template.format(
         problem_statement=problem_statement,
         assessment_keys=",".join(a.value for a in Assessment),
-        assessment_choices="\n".join(
-            [
-                f"{a.value}:{get_system_prompt(
+        assessment_choices="\n".join([f"{a.value}:{get_system_prompt(
                     assessment_prompt_key_mapping[a.value], 
                     mapping=assessment_prompt_mapping, 
                     cache_func=get_cache
-                )}"
-                for a in Assessment
-            ]
-        ),
+                )}" for a in Assessment]),
     )
 
 
