@@ -22,26 +22,27 @@ from langchain_core.messages import (
 def test_messages_to_json():
     """Test messages_to_json function"""
     messages = [
-        SystemMessage(content="tutor prompt", id="442dd806-7378-41db-a222-9fe83a0ec75f"),
+        SystemMessage(
+            content="tutor prompt", id="442dd806-7378-41db-a222-9fe83a0ec75f"
+        ),
         HumanMessage(content="what should i try first"),
-        AIMessage(content="Let's start by thinking about the problem.", id="442dd806-7378-41db-a222-9fe83a0ec75a"),
+        AIMessage(
+            content="Let's start by thinking about the problem.",
+            id="442dd806-7378-41db-a222-9fe83a0ec75a",
+        ),
     ]
 
     expected_output = [
         {
             "type": "SystemMessage",
             "content": "tutor prompt",
-            "id": "442dd806-7378-41db-a222-9fe83a0ec75f"
+            "id": "442dd806-7378-41db-a222-9fe83a0ec75f",
         },
-        {
-            "type": "HumanMessage",
-            "content": "what should i try first",
-            "id": ANY
-        },
+        {"type": "HumanMessage", "content": "what should i try first", "id": ANY},
         {
             "type": "AIMessage",
             "content": "Let's start by thinking about the problem.",
-            "id": "442dd806-7378-41db-a222-9fe83a0ec75a"
+            "id": "442dd806-7378-41db-a222-9fe83a0ec75a",
         },
     ]
     assert messages_to_json(messages) == expected_output
@@ -49,7 +50,10 @@ def test_messages_to_json():
 
 def test_json_to_messages(mocker):
     """Test json_to_messages function"""
-    mocker.patch("open_learning_ai_tutor.utils.uuid4", return_value=UUID("552dd806-7378-41db-a222-9fe83a0ec75f"))
+    mocker.patch(
+        "open_learning_ai_tutor.utils.uuid4",
+        return_value=UUID("552dd806-7378-41db-a222-9fe83a0ec75f"),
+    )
     json_messages = [
         {
             "type": "SystemMessage",
@@ -68,9 +72,16 @@ def test_json_to_messages(mocker):
     ]
 
     expected_output = [
-        SystemMessage(content="tutor prompt", id="442dd806-7378-41db-a222-9fe83a0ec75f"),
-        HumanMessage(content="what should i try first", id="552dd806-7378-41db-a222-9fe83a0ec75f"),
-        AIMessage(content="Let's start by thinking about the problem.", id="442dd806-7378-41db-a222-9fe83a0ec75h"),
+        SystemMessage(
+            content="tutor prompt", id="442dd806-7378-41db-a222-9fe83a0ec75f"
+        ),
+        HumanMessage(
+            content="what should i try first", id="552dd806-7378-41db-a222-9fe83a0ec75f"
+        ),
+        AIMessage(
+            content="Let's start by thinking about the problem.",
+            id="442dd806-7378-41db-a222-9fe83a0ec75h",
+        ),
     ]
 
     assert json_to_messages(json_messages) == expected_output
