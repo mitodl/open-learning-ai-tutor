@@ -11,7 +11,7 @@ dependencies = [
     "langchain-core>=1.0.0,<2.0.0",
     "langchain-experimental>=0.4,<0.5",
     "e2b-code-interpreter>=1.1.0,<2",
-    "langsmith (>=0.8,<0.9)",
+    "langsmith (>=0.9,<0.10)",
 ]
 
 [tool.uv]
