@@ -625,7 +625,7 @@ wheels = [
 
 [[package]]
 name = "langsmith"
-version = "0.9.2"
+version = "0.11.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -643,9 +643,9 @@ dependencies = [
     { name = "xxhash" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/57/8a/445562007432dca8a79dac13a50d3e98da547f2042812254385526dcd207/langsmith-0.9.2.tar.gz", hash = "sha256:b2a43f285a3cc17e46f9eea0ed975709af0c8f40e9f3f250364a8ed728e00e3d", size = 4567843, upload-time = "2026-06-25T13:46:45.823Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/0a/1acb2a3ffbccbe8f8dc358778967c9d2979e8a59b67ceba6eb54474324ab/langsmith-0.11.2.tar.gz", hash = "sha256:927694c939c9fb44187e0126cf718413c45ffce2324d480438e70eb0526e1380", size = 4841592, upload-time = "2026-08-27T22:31:34.004Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/c3/68e5e91300467e3e4f649633561cb797f50293128cbfa29530ce0ea3eb03/langsmith-0.9.2-py3-none-any.whl", hash = "sha256:a861167d181514aa2b73f49874e4f9bb13b4ef75e292e22d3940344e9b345e45", size = 595131, upload-time = "2026-06-25T13:46:43.613Z" },
+    { url = "https://files.pythonhosted.org/packages/00/d9/cec0c1d24dda8c67a23ad204d0167e50aee202460e9388488661d94513f5/langsmith-0.11.2-py3-none-any.whl", hash = "sha256:75258142d27dffcc5df331479704b23fc3fd812cfca0469119bb9055a842882f", size = 753928, upload-time = "2026-08-27T22:31:31.644Z" },
 ]
 
 [[package]]
@@ -748,7 +748,7 @@ wheels = [
 
 [[package]]
 name = "open-learning-ai-tutor"
-version = "0.2.15"
+version = "0.2.16"
 source = { editable = "." }
 dependencies = [
     { name = "e2b-code-interpreter" },
@@ -774,7 +774,7 @@ requires-dist = [
     { name = "langchain-core", specifier = ">=1.0.0,<2.0.0" },
     { name = "langchain-experimental", specifier = ">=0.4,<0.5" },
     { name = "langgraph", specifier = ">=1.0.0,<2.0.0" },
-    { name = "langsmith", specifier = ">=0.9,<0.10" },
+    { name = "langsmith", specifier = ">=0.11,<0.12" },
 ]
 
 [package.metadata.requires-dev]
