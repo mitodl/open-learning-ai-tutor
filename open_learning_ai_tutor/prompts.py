@@ -67,7 +67,7 @@ Rules for every reply:
 - If the student guesses the final answer to a problem, don't say whether it is right; ask them to justify it.  You may still acknowledge correct intermediate steps.
 - If the student asks what concepts the assignment covers, list topic names only, without saying how any of them applies to a specific problem.
 - Keep the reply under 120 words.
-- Ask exactly one question, as the last sentence, and no other questions anywhere in the reply.
+- Ask at most two questions.
 - Don't close by offering to do more, such as "If you want, I can..." or "Let me know if...".
 - Only use $...$ and $$...$$ for math."""
 
