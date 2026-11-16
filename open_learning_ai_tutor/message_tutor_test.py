@@ -88,9 +88,8 @@ def test_message_tutor(mocker):
     assert mock_streaming_response.call_count == 1
 
 
-def test_message_tutor_prompt_overrides(mocker, monkeypatch):
+def test_message_tutor_prompt_overrides(mocker):
     """Prompt overrides reach both the assessment and the tutor prompt."""
-    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
     mock_tutor = mocker.patch("open_learning_ai_tutor.message_tutor.Tutor").return_value
     mock_tutor.get_response.return_value = {
         "messages": [

@@ -363,9 +363,8 @@ def test_get_system_prompt_with_langsmith_set_cache_error(
 
 
 @pytest.mark.parametrize("variant", ["canvas", "edx"])
-def test_prompt_overrides(monkeypatch, variant):
+def test_prompt_overrides(variant):
     """Each kind of prompt can be overridden; the others stay the defaults."""
-    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
     overrides = {
         "tutor_problem": "PROBLEM {problem_statement}",
         "tutor_initial_assessment": (
@@ -391,9 +390,8 @@ def test_prompt_overrides(monkeypatch, variant):
 
 
 @pytest.mark.parametrize("overrides", [None, {}])
-def test_no_prompt_overrides(monkeypatch, overrides):
+def test_no_prompt_overrides(overrides):
     """Without overrides the prompts are the defaults."""
-    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
     history = [HumanMessage(content=' Student: "what do i do next?"')]
     args = ("problem", "problem_set", history, [Intent.P_HYPOTHESIS], "edx")
     assert get_tutor_prompt(*args, overrides) == get_tutor_prompt(*args)
