@@ -86,3 +86,55 @@ def test_message_tutor(mocker):
     )
     assert mock_get_response.call_count == 1
     assert mock_streaming_response.call_count == 1
+
+
+def test_message_tutor_prompt_overrides(mocker, monkeypatch):
+    """Prompt overrides reach both the assessment and the tutor prompt."""
+    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
+    mock_tutor = mocker.patch("open_learning_ai_tutor.message_tutor.Tutor").return_value
+    mock_tutor.get_response.return_value = {
+        "messages": [
+            SystemMessage(content="assessment prompt"),
+            HumanMessage(content='Student: "help"'),
+            AIMessage(content='{"justification": "test", "selection": "g"}'),
+        ]
+    }
+    overrides = {
+        "tutor_problem": "PROBLEM {problem_statement}",
+        "tutor_assessment_WRONG": "CHOICE WRONG",
+    }
+
+    message_tutor(
+        "problem",
+        "problem_set",
+        mocker.Mock(),
+        [HumanMessage(content="help")],
+        [HumanMessage(content="help")],
+        [],
+        [],
+        tools=[],
+        prompt_overrides=overrides,
+    )
+
+    assessment = mock_tutor.get_response.call_args.args[0][0].content
+    tutor = mock_tutor.get_streaming_response.call_args.args[0][0].content
+    assert "a:CHOICE WRONG" in assessment
+    assert tutor.startswith("PROBLEM ")
+
+
+def test_message_tutor_unknown_prompt(mocker):
+    """An override for a prompt the tutor doesn't use is refused up front."""
+    mock_tutor = mocker.patch("open_learning_ai_tutor.message_tutor.Tutor")
+    with pytest.raises(ValueError, match="Unknown tutor prompts"):
+        message_tutor(
+            "problem",
+            "problem_set",
+            mocker.Mock(),
+            [],
+            [],
+            [],
+            [],
+            tools=[],
+            prompt_overrides={"problem": "text"},
+        )
+    mock_tutor.assert_not_called()

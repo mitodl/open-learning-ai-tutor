@@ -7,7 +7,9 @@ from open_learning_ai_tutor.prompts import (
     CANVAS_PROBLEM_PROMPT_TEMPLATE,
     EDX_PROBLEM_PROMPT_TEMPLATE,
     PROBLEM_PROMPT_TEMPLATE,
+    PROMPT_NAMES,
     TUTOR_PROMPT_MAPPING,
+    check_prompt_overrides,
     get_intent_prompt,
     get_system_prompt,
     intent_mapping,
@@ -358,3 +360,57 @@ def test_get_system_prompt_with_langsmith_set_cache_error(
     mock_log.assert_called_once_with(
         "Prompt cache could not be set for cache of class %s", NonDjangoCache.__name__
     )
+
+
+@pytest.mark.parametrize("variant", ["canvas", "edx"])
+def test_prompt_overrides(monkeypatch, variant):
+    """Each kind of prompt can be overridden; the others stay the defaults."""
+    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
+    overrides = {
+        "tutor_problem": "PROBLEM {problem_statement}",
+        "tutor_initial_assessment": (
+            "ASSESS {problem_statement} {assessment_keys} {assessment_choices}"
+        ),
+        "tutor_assessment_WRONG": "CHOICE WRONG",
+        "tutor_intent_P_HYPOTHESIS": "INTENT HYPOTHESIS",
+    }
+    history = [HumanMessage(content=' Student: "what do i do next?"')]
+
+    intents = [Intent.P_HYPOTHESIS, Intent.P_LIMITS]
+    tutor = get_tutor_prompt(
+        "problem", "problem_set", history, intents, variant, overrides
+    )
+    assessment = get_assessment_prompt(
+        "problem", "problem_set", history, variant, overrides
+    )[0].content
+
+    assert tutor[0].content.startswith("PROBLEM \n*Problem Statement*")
+    assert tutor[-1].content == "INTENT HYPOTHESIS" + intent_mapping[Intent.P_LIMITS]
+    assert assessment.startswith("ASSESS \n*Problem Statement*")
+    assert "a:CHOICE WRONG\nb:The student made an error" in assessment
+
+
+@pytest.mark.parametrize("overrides", [None, {}])
+def test_no_prompt_overrides(monkeypatch, overrides):
+    """Without overrides the prompts are the defaults."""
+    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
+    history = [HumanMessage(content=' Student: "what do i do next?"')]
+    args = ("problem", "problem_set", history, [Intent.P_HYPOTHESIS], "edx")
+    assert get_tutor_prompt(*args, overrides) == get_tutor_prompt(*args)
+    assert get_assessment_initial_prompt(
+        "problem", "problem_set", "edx", overrides
+    ) == get_assessment_initial_prompt("problem", "problem_set", "edx")
+
+
+def test_check_prompt_overrides():
+    """Overrides may only name prompts the tutor uses."""
+    check_prompt_overrides(None)
+    check_prompt_overrides(dict.fromkeys(PROMPT_NAMES, "text"))
+    assert {
+        "tutor_problem",
+        "tutor_initial_assessment",
+        "tutor_intent_S_HINT",
+        "tutor_assessment_WRONG",
+    } <= PROMPT_NAMES
+    with pytest.raises(ValueError, match="Unknown tutor prompts: tutor_probelm"):
+        check_prompt_overrides({"tutor_probelm": "text"})

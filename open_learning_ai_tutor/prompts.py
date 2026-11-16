@@ -96,7 +96,7 @@ Analyze the last student's utterance.
 """
 
 
-def get_problem_prompt(problem, problem_set, variant):
+def get_problem_prompt(problem, problem_set, variant, prompt_overrides=None):
     if variant == "edx":
         problem_statement = EDX_PROBLEM_PROMPT_TEMPLATE.format(
             problem=problem, problem_set=problem_set
@@ -107,7 +107,7 @@ def get_problem_prompt(problem, problem_set, variant):
             problem_set=problem_set
         )
 
-    template = get_system_prompt("tutor_problem", TUTOR_PROMPT_MAPPING, get_cache)
+    template = get_prompt("tutor_problem", TUTOR_PROMPT_MAPPING, prompt_overrides)
     return template.format(problem_statement=problem_statement)
 
 
@@ -165,19 +165,19 @@ The problem set contains multiple individual problems. The student may be asking
 """
 
 
-def get_intent_prompt(intents):
+def get_intent_prompt(intents, prompt_overrides=None):
     intent_prompt = ""
 
     if Intent.G_REFUSE in intents:
         intents = [Intent.G_REFUSE]
     for intent in intents:
-        intent_prompt += get_system_prompt(
-            f"tutor_intent_{intent.name}", intent_prompt_mapping, get_cache
+        intent_prompt += get_prompt(
+            f"tutor_intent_{intent.name}", intent_prompt_mapping, prompt_overrides
         )
     return intent_prompt
 
 
-def get_assessment_initial_prompt(problem, problem_set, variant):
+def get_assessment_initial_prompt(problem, problem_set, variant, prompt_overrides=None):
 
     if variant == "edx":
         problem_statement = EDX_PROBLEM_PROMPT_TEMPLATE.format(
@@ -189,23 +189,27 @@ def get_assessment_initial_prompt(problem, problem_set, variant):
             problem_set=problem_set
         )
 
-    template = get_system_prompt(
-        "tutor_initial_assessment", TUTOR_PROMPT_MAPPING, get_cache
+    template = get_prompt(
+        "tutor_initial_assessment", TUTOR_PROMPT_MAPPING, prompt_overrides
     )
 
     return template.format(
         problem_statement=problem_statement,
         assessment_keys=",".join(a.value for a in Assessment),
-        assessment_choices="\n".join([f"{a.value}:{get_system_prompt(
-                    assessment_prompt_key_mapping[a.value], 
-                    mapping=assessment_prompt_mapping, 
-                    cache_func=get_cache
+        assessment_choices="\n".join([f"{a.value}:{get_prompt(
+                    assessment_prompt_key_mapping[a.value],
+                    assessment_prompt_mapping,
+                    prompt_overrides,
                 )}" for a in Assessment]),
     )
 
 
-def get_assessment_prompt(problem, problem_set, new_messages, variant):
-    initial_prompt = get_assessment_initial_prompt(problem, problem_set, variant)
+def get_assessment_prompt(
+    problem, problem_set, new_messages, variant, prompt_overrides=None
+):
+    initial_prompt = get_assessment_initial_prompt(
+        problem, problem_set, variant, prompt_overrides
+    )
     prompt = [SystemMessage(initial_prompt)]
 
     new_messages_text = ""
@@ -215,14 +219,18 @@ def get_assessment_prompt(problem, problem_set, new_messages, variant):
     return prompt
 
 
-def get_tutor_prompt(problem, problem_set, chat_history, intent, variant):
+def get_tutor_prompt(
+    problem, problem_set, chat_history, intent, variant, prompt_overrides=None
+):
     """
     Get the prompt for the AI tutor based on the problem, assessment history, and chat history.
 
     """
 
-    problem_prompt = get_problem_prompt(problem, problem_set, variant)
-    intent_prompt = get_intent_prompt(intent)
+    problem_prompt = get_problem_prompt(
+        problem, problem_set, variant, prompt_overrides
+    )
+    intent_prompt = get_intent_prompt(intent, prompt_overrides)
 
     max_conversation_memory = os.environ.get("AI_TUTOR_MAX_CONVERSATION_MEMORY", 6)
     # the maximum messages in the history is max_conversation_memory from the human
@@ -241,6 +249,41 @@ TUTOR_PROMPT_MAPPING = {
     "tutor_initial_assessment": ASSESSMENT_PROMPT_TEMPLATE,
     "tutor_problem": PROBLEM_PROMPT_TEMPLATE,
 }
+
+# Every prompt the tutor uses, by the name it has in LangSmith
+PROMPT_NAMES = frozenset(
+    {*TUTOR_PROMPT_MAPPING, *intent_prompt_mapping, *assessment_prompt_mapping}
+)
+
+
+def check_prompt_overrides(prompt_overrides: dict | None) -> None:
+    """
+    Raise ValueError if prompt_overrides names a prompt the tutor doesn't use.
+
+    Args:
+        prompt_overrides: Prompt text by prompt name, or None
+    """
+    unknown = sorted(set(prompt_overrides or {}) - PROMPT_NAMES)
+    if unknown:
+        msg = f"Unknown tutor prompts: {', '.join(unknown)}"
+        raise ValueError(msg)
+
+
+def get_prompt(prompt_name: str, mapping: dict, prompt_overrides: dict | None) -> str:
+    """
+    Get the named prompt: its override if given, otherwise the system prompt.
+
+    Args:
+        prompt_name: The name of the prompt to get
+        mapping: The default prompts by name
+        prompt_overrides: Prompt text by prompt name, or None
+
+    Returns:
+        The prompt for the given prompt name
+    """
+    if prompt_overrides and prompt_name in prompt_overrides:
+        return prompt_overrides[prompt_name]
+    return get_system_prompt(prompt_name, mapping, get_cache)
 
 
 def prompt_env_key(prompt_name: str) -> str:
