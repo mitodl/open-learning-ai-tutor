@@ -1,5 +1,9 @@
 from open_learning_ai_tutor.tutor import Tutor
-from open_learning_ai_tutor.prompts import get_assessment_prompt, get_tutor_prompt
+from open_learning_ai_tutor.prompts import (
+    check_prompt_overrides,
+    get_assessment_prompt,
+    get_tutor_prompt,
+)
 from open_learning_ai_tutor.utils import filter_out_system_messages
 from open_learning_ai_tutor.intent_selector import get_intent
 from open_learning_ai_tutor.constants import Intent
@@ -15,6 +19,7 @@ def message_tutor(
     intent_history: list,
     tools,
     variant: str = "edx",
+    prompt_overrides: dict[str, str] | None = None,
 ):
     """
     Function to handle the message flow between the tutor and the student.
@@ -29,16 +34,20 @@ def message_tutor(
         assessment_history (list): All assessments for the student messages in the chat history.
         intent_history (list):  All intents assigned based on the student messages in the chat history.
         tools: Tools available to the tutor.
+        prompt_overrides (dict): Prompt text to use instead of the system prompt,
+            by prompt name (see prompts.PROMPT_NAMES), for example to compare
+            prompts in an evaluation.
     Returns
         tuple: A tuple containing a generator that streams the response ,
             and the new intent history and assessment history
     """
+    check_prompt_overrides(prompt_overrides)
     tutor = Tutor(
         client,
         tools=tools,
     )
     assessment_prompt = get_assessment_prompt(
-        problem, problem_set, new_messages, variant
+        problem, problem_set, new_messages, variant, prompt_overrides
     )
     assessment_response = tutor.get_response(assessment_prompt)
     new_assessment_history = assessment_history + assessment_response["messages"][1:]
@@ -48,7 +57,9 @@ def message_tutor(
     previous_intent = intent_history[-1] if intent_history else [Intent.S_STRATEGY]
     new_intent = get_intent(new_assessment_history[-1].content, previous_intent)
 
-    prompt = get_tutor_prompt(problem, problem_set, chat_history, new_intent, variant)
+    prompt = get_tutor_prompt(
+        problem, problem_set, chat_history, new_intent, variant, prompt_overrides
+    )
 
     new_intent_history = intent_history + [new_intent]
 

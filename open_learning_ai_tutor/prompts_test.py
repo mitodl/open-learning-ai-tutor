@@ -4,7 +4,12 @@ import pytest
 from open_learning_ai_tutor.constants import Intent
 from open_learning_ai_tutor.prompts import (
     ASSESSMENT_PROMPT_TEMPLATE,
+    CANVAS_PROBLEM_PROMPT_TEMPLATE,
+    EDX_PROBLEM_PROMPT_TEMPLATE,
+    PROBLEM_PROMPT_TEMPLATE,
+    PROMPT_NAMES,
     TUTOR_PROMPT_MAPPING,
+    check_prompt_overrides,
     get_intent_prompt,
     get_system_prompt,
     intent_mapping,
@@ -113,6 +118,17 @@ def test_get_assessment_prompt(mocker, variant):
     assert prompt == expected_prompt
 
 
+def expected_problem_message(variant):
+    """The tutor_problem prompt for the "problem" and "problem_set" test inputs."""
+    if variant == "edx":
+        statement = EDX_PROBLEM_PROMPT_TEMPLATE.format(
+            problem="problem", problem_set="problem_set"
+        )
+    else:
+        statement = CANVAS_PROBLEM_PROMPT_TEMPLATE.format(problem_set="problem_set")
+    return PROBLEM_PROMPT_TEMPLATE.format(problem_statement=statement)
+
+
 @pytest.mark.parametrize("variant", ["canvas", "edx"])
 def test_get_tutor_prompt(variant):
     """Test that get_tutor_prompt method returns the correct prompt."""
@@ -124,10 +140,7 @@ def test_get_tutor_prompt(variant):
     intent = [Intent.P_HYPOTHESIS]
 
     prompt = get_tutor_prompt(problem, problem_set, chat_history, intent, variant)
-    if variant == "edx":
-        problem_message = 'Act as an experienced tutor. You are communicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:\n    • Promote a sense of challenge, curiosity, feeling of control\n    • Prevent the student from becoming frustrated\n    • Intervene very indirectly: never give the answer but guide the student to make them find it on their own\n    • Minimize the tutor\'s apparent role in the success\n    • Avoid telling students they are wrong, lead them to discover the error on their own\n    • Quickly correct distracting errors\n\nYou are communicating through messages. Use MathJax formatting using $...$ to display inline mathematical expressions and $$...$$ to display block mathematical expressions.\nFor example, to write "x^2", use "$x^2$". Do not use (...) or [...] to delimit mathematical expressions.  If you need to include the $ symbol in your response and it\nis not part of a mathematical expression, use the escape character \\ before it, like this: \\$.\n\nRemember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.\n\nProvide guidance for the problem:\n\n\n*Problem Statement*:\nproblem\n\nThis problem is in xml format and includes a solution. The problem is part of a problem set.\n\n*Problem Set*:\n\nproblem_set\n\nSome information required to solve the problem may be in other parts of the problem set.\n\n\n\n---\n\nProvide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student\'s progresses and right answers. '
-    else:
-        problem_message = 'Act as an experienced tutor. You are communicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:\n    • Promote a sense of challenge, curiosity, feeling of control\n    • Prevent the student from becoming frustrated\n    • Intervene very indirectly: never give the answer but guide the student to make them find it on their own\n    • Minimize the tutor\'s apparent role in the success\n    • Avoid telling students they are wrong, lead them to discover the error on their own\n    • Quickly correct distracting errors\n\nYou are communicating through messages. Use MathJax formatting using $...$ to display inline mathematical expressions and $$...$$ to display block mathematical expressions.\nFor example, to write "x^2", use "$x^2$". Do not use (...) or [...] to delimit mathematical expressions.  If you need to include the $ symbol in your response and it\nis not part of a mathematical expression, use the escape character \\ before it, like this: \\$.\n\nRemember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.\n\nProvide guidance for the problem:\n\n\n*Problem Statement*:\n\nThis is a problem set and solution. Both the problem set and solution set may consist of multiple files.\nThe following JSON object contains the problem set and solution files and their contents.\n\nproblem_set\n\nThe problem set contains multiple individual problems. The student may be asking for help with any of them.\n\n\n---\n\nProvide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student\'s progresses and right answers. '
+    problem_message = expected_problem_message(variant)
     expected_prompt = [
         SystemMessage(
             content=problem_message,
@@ -166,10 +179,7 @@ def test_get_tutor_prompt_with_history(variant):
     ]
     intent = [Intent.P_HYPOTHESIS]
 
-    if variant == "edx":
-        problem_message = 'Act as an experienced tutor. You are communicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:\n    • Promote a sense of challenge, curiosity, feeling of control\n    • Prevent the student from becoming frustrated\n    • Intervene very indirectly: never give the answer but guide the student to make them find it on their own\n    • Minimize the tutor\'s apparent role in the success\n    • Avoid telling students they are wrong, lead them to discover the error on their own\n    • Quickly correct distracting errors\n\nYou are communicating through messages. Use MathJax formatting using $...$ to display inline mathematical expressions and $$...$$ to display block mathematical expressions.\nFor example, to write "x^2", use "$x^2$". Do not use (...) or [...] to delimit mathematical expressions.  If you need to include the $ symbol in your response and it\nis not part of a mathematical expression, use the escape character \\ before it, like this: \\$.\n\nRemember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.\n\nProvide guidance for the problem:\n\n\n*Problem Statement*:\nproblem\n\nThis problem is in xml format and includes a solution. The problem is part of a problem set.\n\n*Problem Set*:\n\nproblem_set\n\nSome information required to solve the problem may be in other parts of the problem set.\n\n\n\n---\n\nProvide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student\'s progresses and right answers. '
-    else:
-        problem_message = 'Act as an experienced tutor. You are communicating with your student through a chat app. Your student is a college freshman majoring in math. Characteristics of a good tutor include:\n    • Promote a sense of challenge, curiosity, feeling of control\n    • Prevent the student from becoming frustrated\n    • Intervene very indirectly: never give the answer but guide the student to make them find it on their own\n    • Minimize the tutor\'s apparent role in the success\n    • Avoid telling students they are wrong, lead them to discover the error on their own\n    • Quickly correct distracting errors\n\nYou are communicating through messages. Use MathJax formatting using $...$ to display inline mathematical expressions and $$...$$ to display block mathematical expressions.\nFor example, to write "x^2", use "$x^2$". Do not use (...) or [...] to delimit mathematical expressions.  If you need to include the $ symbol in your response and it\nis not part of a mathematical expression, use the escape character \\ before it, like this: \\$.\n\nRemember, NEVER GIVE THE ANSWER DIRECTLY, EVEN IF THEY ASK YOU TO DO SO AND INSIST. Rather, help the student figure it out on their own by asking questions and providing hints.\n\nProvide guidance for the problem:\n\n\n*Problem Statement*:\n\nThis is a problem set and solution. Both the problem set and solution set may consist of multiple files.\nThe following JSON object contains the problem set and solution files and their contents.\n\nproblem_set\n\nThe problem set contains multiple individual problems. The student may be asking for help with any of them.\n\n\n---\n\nProvide the least amount of scaffolding possible to help the student solve the problem on their own. Be succinct but acknowledge the student\'s progresses and right answers. '
+    problem_message = expected_problem_message(variant)
 
     prompt = get_tutor_prompt(problem, problem_set, chat_history, intent, variant)
     expected_prompt = [
@@ -350,3 +360,55 @@ def test_get_system_prompt_with_langsmith_set_cache_error(
     mock_log.assert_called_once_with(
         "Prompt cache could not be set for cache of class %s", NonDjangoCache.__name__
     )
+
+
+@pytest.mark.parametrize("variant", ["canvas", "edx"])
+def test_prompt_overrides(variant):
+    """Each kind of prompt can be overridden; the others stay the defaults."""
+    overrides = {
+        "tutor_problem": "PROBLEM {problem_statement}",
+        "tutor_initial_assessment": (
+            "ASSESS {problem_statement} {assessment_keys} {assessment_choices}"
+        ),
+        "tutor_assessment_WRONG": "CHOICE WRONG",
+        "tutor_intent_P_HYPOTHESIS": "INTENT HYPOTHESIS",
+    }
+    history = [HumanMessage(content=' Student: "what do i do next?"')]
+
+    intents = [Intent.P_HYPOTHESIS, Intent.P_LIMITS]
+    tutor = get_tutor_prompt(
+        "problem", "problem_set", history, intents, variant, overrides
+    )
+    assessment = get_assessment_prompt(
+        "problem", "problem_set", history, variant, overrides
+    )[0].content
+
+    assert tutor[0].content.startswith("PROBLEM \n*Problem Statement*")
+    assert tutor[-1].content == "INTENT HYPOTHESIS" + intent_mapping[Intent.P_LIMITS]
+    assert assessment.startswith("ASSESS \n*Problem Statement*")
+    assert "a:CHOICE WRONG\nb:The student made an error" in assessment
+
+
+@pytest.mark.parametrize("overrides", [None, {}])
+def test_no_prompt_overrides(overrides):
+    """Without overrides the prompts are the defaults."""
+    history = [HumanMessage(content=' Student: "what do i do next?"')]
+    args = ("problem", "problem_set", history, [Intent.P_HYPOTHESIS], "edx")
+    assert get_tutor_prompt(*args, overrides) == get_tutor_prompt(*args)
+    assert get_assessment_initial_prompt(
+        "problem", "problem_set", "edx", overrides
+    ) == get_assessment_initial_prompt("problem", "problem_set", "edx")
+
+
+def test_check_prompt_overrides():
+    """Overrides may only name prompts the tutor uses."""
+    check_prompt_overrides(None)
+    check_prompt_overrides(dict.fromkeys(PROMPT_NAMES, "text"))
+    assert {
+        "tutor_problem",
+        "tutor_initial_assessment",
+        "tutor_intent_S_HINT",
+        "tutor_assessment_WRONG",
+    } <= PROMPT_NAMES
+    with pytest.raises(ValueError, match="Unknown tutor prompts: tutor_probelm"):
+        check_prompt_overrides({"tutor_probelm": "text"})
