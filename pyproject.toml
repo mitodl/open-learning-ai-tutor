@@ -16,6 +16,9 @@ dependencies = [
 ]
 
 [tool.uv]
+# Don't install a version until it has been on PyPI for 7 days. Relative values need uv 0.9.17+.
+exclude-newer = "7d"
+required-version = ">=0.9.17"
 constraint-dependencies = [
     "orjson>=3.10.16",
     "ormsgpack>=1.11.0",
