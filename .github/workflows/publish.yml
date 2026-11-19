@@ -46,7 +46,7 @@ jobs:
       id: version
       run: |
         version="$(uv version --short)"
-        status="$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/open-learning-ai-tutor/${version}/json")"
+        status="$(curl -s --retry 3 --retry-all-errors -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/open-learning-ai-tutor/${version}/json")"
         case "$status" in
           200) echo "new=false" >> "$GITHUB_OUTPUT"; echo "${version} is already on PyPI; skipping publish." ;;
           404) echo "new=true" >> "$GITHUB_OUTPUT"; echo "${version} is not on PyPI yet; publishing." ;;
@@ -82,3 +82,6 @@ jobs:
         path: dist/
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        # Two runs can both see a new version before either uploads it.
+        skip-existing: true
